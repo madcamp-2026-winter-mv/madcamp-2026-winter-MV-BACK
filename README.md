@@ -1,4 +1,4 @@
-# 몰봐 (Mol-Va) : Madcamp View
+# 몰봐 (MV) : Madcamp View
 
 > 몰입캠프에서 지금 뭘 봐야 할지 알려줌 + Madcamp의 모든 것을 View
 > 
