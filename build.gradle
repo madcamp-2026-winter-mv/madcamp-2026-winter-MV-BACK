@@ -35,6 +35,12 @@ dependencies {
 	// 테스트 환경에서도 롬복 사용 시
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// OAuth2 클라이언트 라이브러리
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// 스프링 시큐리티
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 }
 
 tasks.named('test') {
