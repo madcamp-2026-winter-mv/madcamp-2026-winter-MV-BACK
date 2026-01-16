@@ -130,7 +130,7 @@ public class PostService {
                 .voteOptions(voteOptions)
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
-                .comments(comments) // 변환된 댓글 리스트 추가
+                .comments(comments)
                 .build();
     }
 
@@ -149,5 +149,39 @@ public class PostService {
                 .build();
 
         return commentRepository.save(comment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> getMyPosts(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        return postRepository.findByMember(member).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> getPostsICommented(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        return postRepository.findDistinctPostsByComments_Member(member).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    // 중복 코드를 줄이기 위한 DTO 변환 헬퍼 메서드
+    private PostResponseDto convertToDto(Post post) {
+        return PostResponseDto.builder()
+                .postId(post.getPostId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .type(post.getType())
+                .authorNickname(post.getMember().getNickname())
+                .createdAt(post.getCreatedAt())
+                .currentParticipants(post.getCurrentParticipants())
+                .maxParticipants(post.getMaxParticipants())
+                .build();
     }
 }

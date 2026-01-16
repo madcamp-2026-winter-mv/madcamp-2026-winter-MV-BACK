@@ -64,4 +64,13 @@ public class MemberService {
         member.setAllowAlarm(allowAlarm);
         return member.isAllowAlarm();
     }
+
+
+    @Transactional
+    public void leaveRoom(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 없습니다."));
+
+        member.setRoom(null);
+    }
 }

@@ -57,7 +57,6 @@ public class PostController {
         String content = body.get("content");
         Comment comment = postService.createComment(postId, content, email);
 
-        // 엔티티를 DTO로 변환하여 반환
         PostResponseDto.CommentResponseDto response = PostResponseDto.CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
                 .content(comment.getContent())
@@ -66,5 +65,20 @@ public class PostController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+
+    // 1. 내가 작성한 글 목록 조회
+    @GetMapping("/me")
+    public ResponseEntity<List<PostResponseDto>> getMyPosts(@AuthenticationPrincipal OAuth2User principal) {
+        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        return ResponseEntity.ok(postService.getMyPosts(email));
+    }
+
+    // 2. 내가 댓글을 단 글 목록 조회
+    @GetMapping("/me/comments")
+    public ResponseEntity<List<PostResponseDto>> getPostsICommented(@AuthenticationPrincipal OAuth2User principal) {
+        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        return ResponseEntity.ok(postService.getPostsICommented(email));
     }
 }
