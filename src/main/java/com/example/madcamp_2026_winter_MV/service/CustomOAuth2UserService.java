@@ -24,27 +24,24 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     private final MemberRepository memberRepository;
 
     @Override
-    @Transactional // 유저 정보 업데이트 시 DB 반영을 위해 필요
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        // 구글 로그인 진행 시 키가 되는 필드값 (구글은 'sub'이 기본)
         String userNameAttributeName = userRequest.getClientRegistration()
                 .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
 
-        // 구글로부터 받은 유저 속성들
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
         String email = (String) attributes.get("email");
-        String name = (String) attributes.get("name");
+        String name = (String) attributes.get("name"); // 구글 프로필 실명
         String picture = (String) attributes.get("picture");
 
-        // 유저 저장 및 업데이트 로직 호출
         Member member = saveOrUpdate(email, name, picture);
 
         return new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority(member.getRole().name())), // Role을 이름(USER, ADMIN 등)으로 직접 사용
+                Collections.singleton(new SimpleGrantedAuthority(member.getRole().name())),
                 attributes,
                 userNameAttributeName
         );
@@ -52,21 +49,26 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     private Member saveOrUpdate(String email, String name, String picture) {
         Member member = memberRepository.findByEmail(email)
-                .map(entity -> entity.update(name, picture)) // 기존 회원이면 정보 업데이트
+                .map(entity -> {
+                    // 기존 회원이면 실명(realName)과 프로필 이미지를 업데이트
+                    entity.setRealName(name);
+                    entity.setProfileImage(picture);
+                    return entity;
+                })
                 .orElseGet(() -> {
-                    // 신규 회원이면 "몰입하는 [랜덤숫자]"로 닉네임 생성
+                    // 신규 회원이면 닉네임은 랜덤, 실명은 구글 이름으로 저장
                     String randomNickname = "몰입하는 " + (int)(Math.random() * 900 + 100);
                     return Member.builder()
                             .email(email)
-                            .realName(name)
+                            .realName(name) // 구글 실명 저장
                             .nickname(randomNickname)
                             .profileImage(picture)
-                            .role(Role.USER) // Enum 직접 할당
+                            .role(Role.USER)
                             .allowAlarm(true)
                             .presentationCount(0)
                             .build();
                 });
 
-        return memberRepository.save(member); // 생성/수정된 객체 DB 저장
+        return memberRepository.save(member);
     }
 }
