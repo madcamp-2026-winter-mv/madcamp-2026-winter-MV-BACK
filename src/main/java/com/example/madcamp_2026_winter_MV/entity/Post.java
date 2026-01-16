@@ -8,8 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -18,16 +17,15 @@ public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "post_id")
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    private Long postId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -41,7 +39,7 @@ public class Post {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PostType type;
+    private PostType type; // NORMAL, VOTE, PARTY
 
     @Builder.Default
     private int likeCount = 0;
@@ -55,4 +53,15 @@ public class Post {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @Builder.Default
+    private Integer maxParticipants = 0;
+
+    @Builder.Default
+    private Integer currentParticipants = 0;
+
+    // 모집 중인지 여부 확인
+    public boolean isPartyFull() {
+        return currentParticipants >= maxParticipants;
+    }
 }
