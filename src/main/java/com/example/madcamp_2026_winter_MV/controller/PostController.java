@@ -21,18 +21,20 @@ public class PostController {
 
     private final PostService postService;
 
-    // 게시글 작성
+    // 게시글 작성 (반환 시에도 DTO를 사용하여 프록시 에러 방지)
     @PostMapping
-    public ResponseEntity<Post> createPost(@RequestBody PostRequestDto dto,
-                                           @AuthenticationPrincipal OAuth2User principal) {
+    public ResponseEntity<PostResponseDto> createPost(@RequestBody PostRequestDto dto,
+                                                      @AuthenticationPrincipal OAuth2User principal) {
         String email = principal.getAttribute("email");
         Post savedPost = postService.createPost(dto, email);
-        return ResponseEntity.ok(savedPost);
+
+        // 생성 후 바로 상세 정보를 담아 응답 (필요 시 getPostDetail 호출 로직으로 대체 가능)
+        return ResponseEntity.ok(postService.getPostDetail(savedPost.getPostId(), email));
     }
 
-    // 게시글 전체 목록 조회
+    // 게시글 전체 목록 조회 (PostResponseDto 리스트 반환)
     @GetMapping
-    public ResponseEntity<List<Post>> getAllPosts() {
+    public ResponseEntity<List<PostResponseDto>> getAllPosts() {
         return ResponseEntity.ok(postService.getAllPosts());
     }
 
@@ -43,11 +45,10 @@ public class PostController {
         return ResponseEntity.ok("팟 참여에 성공했습니다.");
     }
 
-    // 게시글 상세 조회 (PostResponseDto를 반환하도록 수정)
+    // 게시글 상세 조회
     @GetMapping("/{postId}")
     public ResponseEntity<PostResponseDto> getPostDetail(@PathVariable Long postId,
                                                          @AuthenticationPrincipal OAuth2User principal) {
-        // 상세 조회 시 로그인한 사용자의 이메일을 넘겨 투표 여부를 확인
         String email = principal.getAttribute("email");
         PostResponseDto postDetail = postService.getPostDetail(postId, email);
         return ResponseEntity.ok(postDetail);

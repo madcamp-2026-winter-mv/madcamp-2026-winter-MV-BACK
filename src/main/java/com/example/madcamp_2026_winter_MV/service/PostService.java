@@ -72,8 +72,19 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    public List<PostResponseDto> getAllPosts() {
+        return postRepository.findAll().stream()
+                .map(post -> PostResponseDto.builder()
+                        .postId(post.getPostId())
+                        .title(post.getTitle())
+                        .content(post.getContent())
+                        .type(post.getType())
+                        .authorNickname(post.getMember().getNickname())
+                        .createdAt(post.getCreatedAt())
+                        .currentParticipants(post.getCurrentParticipants())
+                        .maxParticipants(post.getMaxParticipants())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
