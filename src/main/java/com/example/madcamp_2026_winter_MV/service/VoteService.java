@@ -50,7 +50,7 @@ public class VoteService {
         // 이 게시글에 투표했는지 확인
         boolean hasVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(memberId, postId);
 
-        List<VoteOption> options = voteOptionRepository.findByPostId(postId);
+        List<VoteOption> options = voteOptionRepository.findByPostPostId(postId);
 
         // 투표를 안 했으면 익명성을 위해 결과(count)를 0으로 가려서 반환
         if (!hasVoted) {

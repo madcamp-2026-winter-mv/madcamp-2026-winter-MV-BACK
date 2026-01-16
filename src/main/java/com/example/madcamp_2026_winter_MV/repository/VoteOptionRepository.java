@@ -9,5 +9,5 @@ import java.util.List;
 public interface VoteOptionRepository extends JpaRepository<VoteOption, Long> {
 
     // 특정 게시글(투표글)에 속한 모든 선택지 목록
-    List<VoteOption> findByPostId(Long postId);
+    List<VoteOption> findByPostPostId(Long postId);
 }
