@@ -1,6 +1,5 @@
 package com.example.madcamp_2026_winter_MV.dto;
 
-import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.entity.PostType;
 import lombok.*;
 
@@ -19,9 +18,21 @@ public class PostResponseDto {
 
     // 투표 관련 정보
     private boolean isVoted;
-    private List<VoteDto.VoteResponse> voteOptions; // 투표 항목들 (ID, 내용, 득표수 포함)
+    private List<VoteDto.VoteResponse> voteOptions;
 
     // 팟모집 관련 정보
     private Integer currentParticipants;
     private Integer maxParticipants;
+
+    // 댓글 관련 정보
+    private List<CommentResponseDto> comments;
+
+    // 댓글용 내부 DTO
+    @Getter @Builder
+    public static class CommentResponseDto {
+        private Long commentId;
+        private String content;
+        private String authorNickname;
+        private LocalDateTime createdAt;
+    }
 }

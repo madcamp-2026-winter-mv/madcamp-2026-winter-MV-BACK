@@ -95,16 +95,28 @@ public class PostService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 투표 참여 여부 확인
         boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
 
-        // 투표 항목 DTO 변환 (투표 안했으면 count 가림)
         List<VoteDto.VoteResponse> voteOptions = post.getVoteOptions().stream()
                 .map(option -> VoteDto.VoteResponse.builder()
                         .optionId(option.getId())
                         .content(option.getContent())
-                        .count(isVoted ? option.getCount() : 0) // 투표 전엔 0으로 표시
+                        .count(isVoted ? option.getCount() : 0)
                         .build())
+                .collect(Collectors.toList());
+
+        // 댓글 리스트 변환 추가
+        List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
+                .map(comment -> {
+                    String nickname = (comment.getMember() != null) ? comment.getMember().getNickname() : "알 수 없음";
+
+                    return PostResponseDto.CommentResponseDto.builder()
+                            .commentId(comment.getCommentId())
+                            .content(comment.getContent())
+                            .authorNickname(nickname)
+                            .createdAt(comment.getCreatedAt())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         return PostResponseDto.builder()
@@ -118,6 +130,7 @@ public class PostService {
                 .voteOptions(voteOptions)
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
+                .comments(comments) // 변환된 댓글 리스트 추가
                 .build();
     }
 
