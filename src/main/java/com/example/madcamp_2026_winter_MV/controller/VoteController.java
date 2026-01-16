@@ -5,6 +5,8 @@ import com.example.madcamp_2026_winter_MV.entity.VoteOption;
 import com.example.madcamp_2026_winter_MV.service.VoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,23 +18,28 @@ public class VoteController {
 
     private final VoteService voteService;
 
-    // 투표하기 실행 - POST /api/vote/{postId}
+    // 투표하기 실행
     @PostMapping("/{postId}")
     public ResponseEntity<String> castVote(
             @PathVariable Long postId,
-            @RequestBody VoteDto.VoteRequest request) {
+            @RequestBody VoteDto.VoteRequest request,
+            @AuthenticationPrincipal OAuth2User principal) {
 
-        voteService.castVote(request.getMemberId(), postId, request.getOptionId());
+        // 로그인된 사용자의 이메일 가져오기
+        String email = principal.getAttribute("email");
+
+        voteService.castVote(email, postId, request.getOptionId());
         return ResponseEntity.ok("투표가 성공적으로 완료되었습니다.");
     }
 
-    // 투표 결과 및 옵션 조회 - GET /api/vote/{postId}?memberId=1
+    // 투표 결과 및 옵션 조회
     @GetMapping("/{postId}")
     public ResponseEntity<List<VoteDto.VoteResponse>> getVoteDetails(
             @PathVariable Long postId,
-            @RequestParam Long memberId) {
+            @AuthenticationPrincipal OAuth2User principal) {
 
-        List<VoteOption> options = voteService.getVoteDetails(memberId, postId);
+        String email = principal.getAttribute("email");
+        List<VoteOption> options = voteService.getVoteDetails(email, postId);
 
         // 전체 투표 수 계산 (득표율 계산용)
         int totalVotes = options.stream().mapToInt(VoteOption::getCount).sum();

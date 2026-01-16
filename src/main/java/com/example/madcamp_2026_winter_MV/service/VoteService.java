@@ -19,20 +19,22 @@ public class VoteService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void castVote(Long memberId, Long postId, Long optionId) {
+    public void castVote(String email, Long postId, Long optionId) {
+        // 0. 이메일로 현재 로그인한 회원 찾기
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         // 1. 이미 투표했는지 확인 (중복 방지)
-        if (voteRecordRepository.existsByMemberMemberIdAndPostPostId(memberId, postId)) {
+        if (voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId)) {
             throw new IllegalStateException("이미 이 투표에 참여하셨습니다.");
         }
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
         VoteOption option = voteOptionRepository.findById(optionId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 선택지입니다."));
 
-        // 2. 투표 기록 저장 (익명성 유지를 위해 누가 뭘 뽑았는지는 DB에만 남음)
+        // 2. 투표 기록 저장
         VoteRecord record = VoteRecord.builder()
                 .member(member)
                 .post(post)
@@ -45,10 +47,12 @@ public class VoteService {
     }
 
     // 투표 옵션 및 결과 조회
+    public List<VoteOption> getVoteDetails(String email, Long postId) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-    public List<VoteOption> getVoteDetails(Long memberId, Long postId) {
         // 이 게시글에 투표했는지 확인
-        boolean hasVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(memberId, postId);
+        boolean hasVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
 
         List<VoteOption> options = voteOptionRepository.findByPostPostId(postId);
 
