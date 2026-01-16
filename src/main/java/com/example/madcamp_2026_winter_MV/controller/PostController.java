@@ -1,6 +1,7 @@
 package com.example.madcamp_2026_winter_MV.controller;
 
 import com.example.madcamp_2026_winter_MV.dto.PostRequestDto;
+import com.example.madcamp_2026_winter_MV.entity.Comment;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -38,5 +40,23 @@ public class PostController {
     public ResponseEntity<String> joinParty(@PathVariable Long postId) {
         postService.joinParty(postId);
         return ResponseEntity.ok("팟 참여에 성공했습니다.");
+    }
+
+    // 게시글 상세 조회
+    @GetMapping("/{postId}")
+    public ResponseEntity<Post> getPostDetail(@PathVariable Long postId) {
+        Post post = postService.getPostDetail(postId);
+        return ResponseEntity.ok(post);
+    }
+
+    // 댓글 작성
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<Comment> createComment(@PathVariable Long postId,
+                                                 @RequestBody Map<String, String> body,
+                                                 @AuthenticationPrincipal OAuth2User principal) {
+        String email = principal.getAttribute("email");
+        String content = body.get("content");
+        Comment comment = postService.createComment(postId, content, email);
+        return ResponseEntity.ok(comment);
     }
 }
