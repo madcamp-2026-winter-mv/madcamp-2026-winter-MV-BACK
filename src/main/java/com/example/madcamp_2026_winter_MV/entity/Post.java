@@ -6,6 +6,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -59,6 +61,15 @@ public class Post {
 
     @Builder.Default
     private Integer currentParticipants = 0;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<VoteOption> voteOptions = new ArrayList<>();
+
+    public void addVoteOption(VoteOption option) {
+        voteOptions.add(option);
+        option.setPost(this);
+    }
 
     // 모집 중인지 여부 확인
     public boolean isPartyFull() {

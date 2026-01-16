@@ -1,6 +1,7 @@
 package com.example.madcamp_2026_winter_MV.controller;
 
 import com.example.madcamp_2026_winter_MV.dto.PostRequestDto;
+import com.example.madcamp_2026_winter_MV.dto.PostResponseDto;
 import com.example.madcamp_2026_winter_MV.entity.Comment;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.service.PostService;
@@ -42,11 +43,14 @@ public class PostController {
         return ResponseEntity.ok("팟 참여에 성공했습니다.");
     }
 
-    // 게시글 상세 조회
+    // 게시글 상세 조회 (PostResponseDto를 반환하도록 수정)
     @GetMapping("/{postId}")
-    public ResponseEntity<Post> getPostDetail(@PathVariable Long postId) {
-        Post post = postService.getPostDetail(postId);
-        return ResponseEntity.ok(post);
+    public ResponseEntity<PostResponseDto> getPostDetail(@PathVariable Long postId,
+                                                         @AuthenticationPrincipal OAuth2User principal) {
+        // 상세 조회 시 로그인한 사용자의 이메일을 넘겨 투표 여부를 확인
+        String email = principal.getAttribute("email");
+        PostResponseDto postDetail = postService.getPostDetail(postId, email);
+        return ResponseEntity.ok(postDetail);
     }
 
     // 댓글 작성
