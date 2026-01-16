@@ -21,7 +21,7 @@ public class VoteService {
     @Transactional
     public void castVote(Long memberId, Long postId, Long optionId) {
         // 1. 이미 투표했는지 확인 (중복 방지)
-        if (voteRecordRepository.existsByMemberIdAndPostId(memberId, postId)) {
+        if (voteRecordRepository.existsByMemberMemberIdAndPostPostId(memberId, postId)) {
             throw new IllegalStateException("이미 이 투표에 참여하셨습니다.");
         }
 
@@ -44,12 +44,11 @@ public class VoteService {
         option.setCount(option.getCount() + 1);
     }
 
-    /**
-     * 투표 옵션 및 결과 조회 (익명성 및 결과 숨김 로직 포함)
-     */
+    // 투표 옵션 및 결과 조회
+
     public List<VoteOption> getVoteDetails(Long memberId, Long postId) {
-        // 해당 멤버가 이 게시글에 투표했는지 확인
-        boolean hasVoted = voteRecordRepository.existsByMemberIdAndPostId(memberId, postId);
+        // 이 게시글에 투표했는지 확인
+        boolean hasVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(memberId, postId);
 
         List<VoteOption> options = voteOptionRepository.findByPostId(postId);
 

@@ -85,7 +85,7 @@ public class PostService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 투표 참여 여부 확인
-        boolean isVoted = voteRecordRepository.existsByMemberIdAndPostId(member.getMemberId(), postId);
+        boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
 
         // 투표 항목 DTO 변환 (투표 안했으면 count 가림)
         List<VoteDto.VoteResponse> voteOptions = post.getVoteOptions().stream()
