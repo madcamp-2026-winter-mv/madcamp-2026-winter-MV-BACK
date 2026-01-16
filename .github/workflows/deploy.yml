@@ -61,7 +61,7 @@ jobs:
             docker stop molva-app || true
             docker rm molva-app || true
 
-            # 새로운 컨테이너 실행 
+            # 새로운 컨테이너 실행
             docker run -d --name molva-app -p 8080:8080 \
               -e SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}" \
               -e SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" \
@@ -71,6 +71,7 @@ jobs:
               -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
               -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               -e AWS_REGION="${{ secrets.AWS_REGION }}" \
+              -e SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI="http://3.36.106.70.nip.io:8080/login/oauth2/code/google" \
               ${{ env.ECR_REPOSITORY_URL }}:latest
             
             # 사용하지 않는 이미지 정리
