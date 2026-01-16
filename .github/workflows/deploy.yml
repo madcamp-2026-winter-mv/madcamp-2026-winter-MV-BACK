@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+      ECR_REPOSITORY_URL: ${{ secrets.ECR_REPOSITORY }}
 
     steps:
       - name: Checkout
@@ -43,14 +43,9 @@ jobs:
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPO_NAME: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG
-          echo "registry=$ECR_REGISTRY" >> $GITHUB_OUTPUT
+          docker build -t ${{ env.ECR_REPOSITORY_URL }}:latest .
+          docker push ${{ env.ECR_REPOSITORY_URL }}:latest
 
       - name: SSH into EC2 and Deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -59,14 +54,14 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # ECR 로그인
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.build-image.outputs.registry }}
+            # ECR 로그인 
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REPOSITORY_URL }}
             
             # 기존 컨테이너 중지 및 삭제
             docker stop molva-app || true
             docker rm molva-app || true
 
-            # 새로운 컨테이너 실행 (DB 및 OAuth 환경변수 주입)
+            # 새로운 컨테이너 실행 
             docker run -d --name molva-app -p 8080:8080 \
               -e SPRING_DATASOURCE_URL="jdbc:mysql://madcamp.cnagmas6248f.ap-northeast-2.rds.amazonaws.com:3306/madcamp?serverTimezone=Asia/Seoul" \
               -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} \
@@ -77,7 +72,7 @@ jobs:
               -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
               -e AWS_REGION=${{ secrets.AWS_REGION }} \
               -e S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }} \
-              ${{ steps.build-image.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
+              ${{ env.ECR_REPOSITORY_URL }}:latest
             
             # 사용하지 않는 이미지 정리
             docker image prune -f
