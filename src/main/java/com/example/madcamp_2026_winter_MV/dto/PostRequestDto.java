@@ -3,6 +3,7 @@ package com.example.madcamp_2026_winter_MV.dto;
 import com.example.madcamp_2026_winter_MV.entity.PostType;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
 
 @Getter @Setter
 public class PostRequestDto {
@@ -12,4 +13,5 @@ public class PostRequestDto {
     private String content;
     private PostType type;
     private Integer maxParticipants;
+    private List<String> voteContents;
 }

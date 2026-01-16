@@ -1,6 +1,8 @@
 package com.example.madcamp_2026_winter_MV.service;
 
 import com.example.madcamp_2026_winter_MV.dto.PostRequestDto;
+import com.example.madcamp_2026_winter_MV.dto.PostResponseDto;
+import com.example.madcamp_2026_winter_MV.dto.VoteDto;
 import com.example.madcamp_2026_winter_MV.entity.*;
 import com.example.madcamp_2026_winter_MV.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +21,7 @@ public class PostService {
     private final RoomRepository roomRepository;
     private final CategoryRepository categoryRepository;
     private final CommentRepository commentRepository;
+    private final VoteRecordRepository voteRecordRepository;
 
     @Transactional
     public Post createPost(PostRequestDto dto, String email) {
@@ -35,10 +39,18 @@ public class PostService {
                 .member(member)
                 .room(room)
                 .category(category)
-                // 팟모집일 경우 DTO에서 받은 최대 인원 설정 (기본값 0)
                 .maxParticipants(dto.getMaxParticipants() != null ? dto.getMaxParticipants() : 0)
-                .currentParticipants(dto.getType() == PostType.PARTY ? 1 : 0) // 작성자 본인 포함
+                .currentParticipants(dto.getType() == PostType.PARTY ? 1 : 0)
                 .build();
+
+        if (dto.getType() == PostType.VOTE && dto.getVoteContents() != null) {
+            for (String voteContent : dto.getVoteContents()) {
+                VoteOption option = VoteOption.builder()
+                        .content(voteContent)
+                        .build();
+                post.addVoteOption(option);
+            }
+        }
 
         return postRepository.save(post);
     }
@@ -64,14 +76,40 @@ public class PostService {
         return postRepository.findAll();
     }
 
-    // 추가된 기능: 게시글 상세 조회
     @Transactional(readOnly = true)
-    public Post getPostDetail(Long postId) {
-        return postRepository.findById(postId)
+    public PostResponseDto getPostDetail(Long postId, String email) {
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 투표 참여 여부 확인
+        boolean isVoted = voteRecordRepository.existsByMemberIdAndPostId(member.getMemberId(), postId);
+
+        // 투표 항목 DTO 변환 (투표 안했으면 count 가림)
+        List<VoteDto.VoteResponse> voteOptions = post.getVoteOptions().stream()
+                .map(option -> VoteDto.VoteResponse.builder()
+                        .optionId(option.getId())
+                        .content(option.getContent())
+                        .count(isVoted ? option.getCount() : 0) // 투표 전엔 0으로 표시
+                        .build())
+                .collect(Collectors.toList());
+
+        return PostResponseDto.builder()
+                .postId(post.getPostId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .type(post.getType())
+                .authorNickname(post.getMember().getNickname())
+                .createdAt(post.getCreatedAt())
+                .isVoted(isVoted)
+                .voteOptions(voteOptions)
+                .currentParticipants(post.getCurrentParticipants())
+                .maxParticipants(post.getMaxParticipants())
+                .build();
     }
 
-    // 추가된 기능: 댓글 작성
     @Transactional
     public Comment createComment(Long postId, String content, String email) {
         Post post = postRepository.findById(postId)
