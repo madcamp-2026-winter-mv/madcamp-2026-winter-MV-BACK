@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
     // 특정 게시판의 게시글만 가져오는 기능
-    List<Post> findByRoomId(Long roomId);
+    List<Post> findByRoom_RoomId(Long roomId);
 }

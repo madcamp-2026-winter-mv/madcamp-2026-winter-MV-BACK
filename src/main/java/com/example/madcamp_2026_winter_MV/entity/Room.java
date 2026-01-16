@@ -17,7 +17,7 @@ public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "room_id")
-    private Long id;
+    private Long roomId;
 
     @Column(nullable = false, unique = true, length = 10)
     private String inviteCode; // 예: MAD012
