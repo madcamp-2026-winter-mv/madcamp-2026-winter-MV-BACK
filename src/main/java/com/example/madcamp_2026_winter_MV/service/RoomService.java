@@ -19,9 +19,7 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final MemberRepository memberRepository;
 
-    /**
-     * 초대 코드로 분반 입장하기
-     */
+    // 초대 코드로 분반 입장하기
     @Transactional
     public void joinRoom(Long memberId, String inviteCode) {
         Room room = roomRepository.findByInviteCode(inviteCode)
@@ -33,9 +31,7 @@ public class RoomService {
         member.setRoom(room); // 멤버에 분반 정보 매핑
     }
 
-    /**
-     * 가중치 기반 발표자(제물) 선정
-     */
+    // 가중치 기반 발표자 선정
     @Transactional
     public Member pickPresenter(Long roomId) {
         Room room = roomRepository.findById(roomId)
@@ -57,7 +53,7 @@ public class RoomService {
 
         // 선정된 멤버 횟수 증가 및 룸에 현재 발표자로 등록
         selected.setPresentationCount(selected.getPresentationCount() + 1);
-        room.setCurrentPresenterId(selected.getId());
+        room.setCurrentPresenterId(selected.getMemberId());
 
         return selected;
     }
