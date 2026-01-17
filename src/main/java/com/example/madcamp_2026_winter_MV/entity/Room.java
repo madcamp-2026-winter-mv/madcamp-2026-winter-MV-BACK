@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -38,6 +39,11 @@ public class Room {
     @Builder.Default
     private List<Member> members = new ArrayList<>();
 
+    private LocalDateTime attendanceEndTime; // 출석 마감 시간
+
+    @Builder.Default
+    private int totalSessionCount = 0; // 분반 전체 세션 수 (출석률 계산용)
+
     public void addMember(Member member) {
         this.members.add(member);
         if (member.getRoom() != this) {
@@ -45,13 +51,40 @@ public class Room {
         }
     }
 
-    // 공지사항 업데이트 메서드
     public void updateNotice(String notice) {
         this.notice = notice;
     }
 
-    // 출석 모드 토글
     public void toggleAttendance(boolean active) {
         this.isAttendanceActive = active;
+    }
+
+    // --- 추가된 관리 메서드 ---
+
+    // 분반 이름 수정
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    // 출석 시작 (마감 시간 설정)
+    public void startAttendance(int minutes) {
+        this.isAttendanceActive = true;
+        this.attendanceEndTime = LocalDateTime.now().plusMinutes(minutes);
+    }
+
+    // 출석 종료
+    public void stopAttendance() {
+        this.isAttendanceActive = false;
+        this.attendanceEndTime = null;
+    }
+
+    // 전체 세션 수 증가
+    public void incrementTotalSessions() {
+        this.totalSessionCount++;
+    }
+
+    // 발표자 업데이트
+    public void updatePresenter(Long memberId) {
+        this.currentPresenterId = memberId;
     }
 }

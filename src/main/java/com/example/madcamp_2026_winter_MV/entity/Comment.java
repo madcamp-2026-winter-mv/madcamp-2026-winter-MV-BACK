@@ -33,4 +33,11 @@ public class Comment {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public void setMember(Member member) {
+        this.member = member;
+        if (!member.getComments().contains(this)) {
+            member.getComments().add(this);
+        }
+    }
 }

@@ -56,8 +56,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     return entity;
                 })
                 .orElseGet(() -> {
-                    // 신규 회원이면 닉네임은 랜덤, 실명은 구글 이름으로 저장
-                    String randomNickname = "몰입하는 " + (int)(Math.random() * 900 + 100);
+                    // 신규 회원이면 중복되지 않는 랜덤 닉네임 생성
+                    String randomNickname;
+                    do {
+                        randomNickname = "몰입하는 " + (int)(Math.random() * 9000 + 1000);
+                    } while (memberRepository.existsByNickname(randomNickname));
+
                     return Member.builder()
                             .email(email)
                             .realName(name) // 구글 실명 저장
