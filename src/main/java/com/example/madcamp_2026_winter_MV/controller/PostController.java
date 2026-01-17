@@ -19,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PostController {
 
+    // 변수명을 postService로 통일하여 빨간 줄 해결
     private final PostService postService;
 
     @PostMapping
@@ -48,7 +49,6 @@ public class PostController {
         return ResponseEntity.ok(postDetail);
     }
 
-    // 댓글 작성
     @PostMapping("/{postId}/comments")
     public ResponseEntity<PostResponseDto.CommentResponseDto> createComment(@PathVariable Long postId,
                                                                             @RequestBody Map<String, String> body,
@@ -67,23 +67,18 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-
-    // 1. 내가 작성한 글 목록 조회
     @GetMapping("/me")
     public ResponseEntity<List<PostResponseDto>> getMyPosts(@AuthenticationPrincipal OAuth2User principal) {
         String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
         return ResponseEntity.ok(postService.getMyPosts(email));
     }
 
-    // 2. 내가 댓글을 단 글 목록 조회
     @GetMapping("/me/comments")
     public ResponseEntity<List<PostResponseDto>> getPostsICommented(@AuthenticationPrincipal OAuth2User principal) {
         String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
         return ResponseEntity.ok(postService.getPostsICommented(email));
     }
 
-
-    // 3. 게시글 수정 (PATCH /api/posts/{postId})
     @PatchMapping("/{postId}")
     public ResponseEntity<PostResponseDto> updatePost(
             @PathVariable Long postId,
@@ -95,7 +90,6 @@ public class PostController {
         return ResponseEntity.ok(postService.getPostDetail(postId, email));
     }
 
-    // 4. 게시글 삭제 (DELETE /api/posts/{postId})
     @DeleteMapping("/{postId}")
     public ResponseEntity<String> deletePost(
             @PathVariable Long postId,
@@ -106,16 +100,31 @@ public class PostController {
         return ResponseEntity.ok("게시글이 삭제되었습니다.");
     }
 
-    // 5. 우리 반 전용 글 목록 조회
     @GetMapping("/room/{roomId}")
     public ResponseEntity<List<PostResponseDto>> getPostsByRoom(@PathVariable Long roomId) {
         return ResponseEntity.ok(postService.getPostsByRoom(roomId));
     }
 
-    // 6.카테고리별 공통 글 목록 조회
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<PostResponseDto>> getPostsByCategory(@PathVariable Long categoryId) {
         return ResponseEntity.ok(postService.getPostsByCategory(categoryId));
     }
 
+    @GetMapping("/room/{roomId}/dashboard")
+    public ResponseEntity<Map<String, Object>> getRoomDashboard(@PathVariable Long roomId) {
+        return ResponseEntity.ok(postService.getRoomDashboardData(roomId));
+    }
+
+    @GetMapping("/common/hot3")
+    public ResponseEntity<List<PostResponseDto>> getHot3Posts() {
+        return ResponseEntity.ok(postService.getHot3Posts());
+    }
+
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<String> toggleLike(@PathVariable Long postId,
+                                             @AuthenticationPrincipal OAuth2User principal) {
+        String email = principal.getAttribute("email");
+        postService.toggleLike(postId, email);
+        return ResponseEntity.ok("좋아요 상태가 변경되었습니다.");
+    }
 }

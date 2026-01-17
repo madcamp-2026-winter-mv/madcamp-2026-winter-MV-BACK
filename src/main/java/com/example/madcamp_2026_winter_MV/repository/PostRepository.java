@@ -3,7 +3,9 @@ package com.example.madcamp_2026_winter_MV.repository;
 import com.example.madcamp_2026_winter_MV.entity.Member;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.entity.PostType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,4 +30,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 6. 특정 카테고리(게시판 종류)에 해당하는 모든 글 조회 (공통 게시판용)
     List<Post> findByCategory_CategoryId(Long categoryId);
+
+    // 7. 좋아요가 많은 순서대로 게시글 조회 (실시간 HOT 3용)
+    @Query("SELECT p FROM Post p LEFT JOIN p.likes l GROUP BY p ORDER BY COUNT(l) DESC")
+    List<Post> findTop3ByOrderByLikesSizeDesc(Pageable pageable);
+
+    // 8. 특정 타입의 게시글 중 제목에 특정 단어가 포함된 게시글 조회 (검색 기능용)
+    List<Post> findByTypeAndTitleContaining(PostType type, String title);
 }

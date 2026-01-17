@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +25,8 @@ public class PostService {
     private final CategoryRepository categoryRepository;
     private final CommentRepository commentRepository;
     private final VoteRecordRepository voteRecordRepository;
+    private final LikeRepository likeRepository;
+    private final VoteService voteService; // VoteService 주입 추가
 
     @Transactional
     public Post createPost(PostRequestDto dto, String email) {
@@ -74,16 +79,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public List<PostResponseDto> getAllPosts() {
         return postRepository.findAll().stream()
-                .map(post -> PostResponseDto.builder()
-                        .postId(post.getPostId())
-                        .title(post.getTitle())
-                        .content(post.getContent())
-                        .type(post.getType())
-                        .authorNickname(post.getMember().getNickname())
-                        .createdAt(post.getCreatedAt())
-                        .currentParticipants(post.getCurrentParticipants())
-                        .maxParticipants(post.getMaxParticipants())
-                        .build())
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
@@ -95,21 +91,24 @@ public class PostService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        // 투표 여부 확인
         boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
 
-        List<VoteDto.VoteResponse> voteOptions = post.getVoteOptions().stream()
+        // 좋아요 여부 확인
+        boolean isLiked = likeRepository.findByMemberAndPost(member, post).isPresent();
+
+        // VoteService를 사용하여 투표 옵션 정보를 가져옴
+        List<VoteDto.VoteResponse> voteOptions = voteService.getVoteDetails(email, postId).stream()
                 .map(option -> VoteDto.VoteResponse.builder()
                         .optionId(option.getId())
                         .content(option.getContent())
-                        .count(isVoted ? option.getCount() : 0)
+                        .count(option.getCount())
                         .build())
                 .collect(Collectors.toList());
 
-        // 댓글 리스트 변환 추가
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> {
                     String nickname = (comment.getMember() != null) ? comment.getMember().getNickname() : "알 수 없음";
-
                     return PostResponseDto.CommentResponseDto.builder()
                             .commentId(comment.getCommentId())
                             .content(comment.getContent())
@@ -127,6 +126,8 @@ public class PostService {
                 .authorNickname(post.getMember().getNickname())
                 .createdAt(post.getCreatedAt())
                 .isVoted(isVoted)
+                .isLiked(isLiked)
+                .likeCount(post.getLikes().size())
                 .voteOptions(voteOptions)
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
@@ -171,7 +172,6 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
-    // 중복 코드를 줄이기 위한 DTO 변환 헬퍼 메서드
     private PostResponseDto convertToDto(Post post) {
         return PostResponseDto.builder()
                 .postId(post.getPostId())
@@ -182,6 +182,7 @@ public class PostService {
                 .createdAt(post.getCreatedAt())
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
+                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
                 .build();
     }
 
@@ -191,16 +192,12 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
-        // 작성자 본인 확인
         if (!post.getMember().getEmail().equals(email)) {
             throw new RuntimeException("게시글 수정 권한이 없습니다.");
         }
 
-        // 기본 정보 업데이트
         post.setTitle(dto.getTitle());
         post.setContent(dto.getContent());
-
-        // 필요한 경우 카테고리 등 다른 필드 업데이트 로직 추가 가능
     }
 
     @Transactional
@@ -208,7 +205,6 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
-        // 작성자 본인 확인
         if (!post.getMember().getEmail().equals(email)) {
             throw new RuntimeException("게시글 삭제 권한이 없습니다.");
         }
@@ -216,7 +212,6 @@ public class PostService {
         postRepository.delete(post);
     }
 
-    // 1. [분반 공간] 특정 분반 ID로 글 목록 조회
     @Transactional(readOnly = true)
     public List<PostResponseDto> getPostsByRoom(Long roomId) {
         return postRepository.findByRoom_RoomId(roomId).stream()
@@ -224,11 +219,63 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
-    // 2. [공통 게시판] 특정 카테고리 ID로 글 목록 조회
     @Transactional(readOnly = true)
     public List<PostResponseDto> getPostsByCategory(Long categoryId) {
         return postRepository.findByCategory_CategoryId(categoryId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRoomDashboardData(Long roomId) {
+        Map<String, Object> dashboard = new HashMap<>();
+        List<Post> roomPosts = postRepository.findByRoom_RoomId(roomId);
+
+        dashboard.put("attendance", roomPosts.stream()
+                .filter(p -> p.getType() == PostType.ATTENDANCE)
+                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+                .findFirst().map(this::convertToDto).orElse(null));
+
+        dashboard.put("presenter", roomPosts.stream()
+                .filter(p -> p.getType() == PostType.PRESENTER)
+                .findFirst().map(this::convertToDto).orElse(null));
+
+        dashboard.put("schedules", roomPosts.stream()
+                .filter(p -> p.getType() == PostType.SCHEDULE)
+                .map(this::convertToDto)
+                .collect(Collectors.toList()));
+
+        return dashboard;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> getHot3Posts() {
+        return postRepository.findAll().stream()
+                .sorted((p1, p2) -> Integer.compare(
+                        p2.getLikes() != null ? p2.getLikes().size() : 0,
+                        p1.getLikes() != null ? p1.getLikes().size() : 0))
+                .limit(3)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void toggleLike(Long postId, String email) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다."));
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자가 없습니다."));
+
+        Optional<Like> existingLike = likeRepository.findByMemberAndPost(member, post);
+
+        if (existingLike.isPresent()) {
+            likeRepository.delete(existingLike.get());
+        } else {
+            likeRepository.save(Like.builder().member(member).post(post).build());
+        }
+
+        if (likeRepository.countByPost(post) > 5) {
+            post.setHot(true);
+        }
     }
 }
