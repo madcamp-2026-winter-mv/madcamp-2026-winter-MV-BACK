@@ -41,7 +41,7 @@ public class Post {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PostType type; // NORMAL, VOTE, PARTY
+    private PostType type; // NORMAL, VOTE, PARTY, ATTENDANCE, PRESENTER, SCHEDULE
 
     @Builder.Default
     private int likeCount = 0;
@@ -64,6 +64,9 @@ public class Post {
 
     @Builder.Default
     private boolean isClosed = false;
+
+    @Builder.Default
+    private boolean isAnonymous = false;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -89,8 +92,7 @@ public class Post {
 
     // 마감 여부를 판단하는 비즈니스 로직 추가
     public boolean isVoteExpired() {
-        // 수동 마감되었거나, 생성된 지 24시간이 지났으면 true
-        return this.isClosed || this.createdAt.isBefore(LocalDateTime.now().minusHours(24));
+        return this.isClosed || (this.createdAt != null && this.createdAt.isBefore(LocalDateTime.now().minusHours(24)));
     }
 
     public void setMember(Member member) {
