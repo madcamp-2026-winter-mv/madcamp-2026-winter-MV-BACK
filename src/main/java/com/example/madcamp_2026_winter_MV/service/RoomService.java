@@ -1,11 +1,14 @@
 package com.example.madcamp_2026_winter_MV.service;
 
 import com.example.madcamp_2026_winter_MV.dto.MemberResponseDto;
+import com.example.madcamp_2026_winter_MV.dto.ScheduleRequestDto;
 import com.example.madcamp_2026_winter_MV.entity.Member;
 import com.example.madcamp_2026_winter_MV.entity.Room;
-import com.example.madcamp_2026_winter_MV.entity.Role; // Role enum 가정
+import com.example.madcamp_2026_winter_MV.entity.Role;
+import com.example.madcamp_2026_winter_MV.entity.Schedule;
 import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
 import com.example.madcamp_2026_winter_MV.repository.RoomRepository;
+import com.example.madcamp_2026_winter_MV.repository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final MemberRepository memberRepository;
+    private final ScheduleRepository scheduleRepository;
 
     @Transactional
     public void joinRoomByEmail(String email, String inviteCode) {
@@ -158,5 +162,51 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
 
         room.stopAttendance();
+    }
+
+    //운영진이 날짜와 시간을 지정하여 일정을 등록하는 로직
+    @Transactional
+    public void addSchedule(Long roomId, ScheduleRequestDto dto) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
+
+        Schedule schedule = Schedule.builder()
+                .room(room)
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .startTime(dto.getStartTime())
+                .isImportant(dto.isImportant())
+                .build();
+
+        scheduleRepository.save(schedule);
+    }
+
+    // 분반 멤버들이 일정을 조회하는 로직 (시간순 정렬)
+    public List<Schedule> getSchedules(Long roomId) {
+        return scheduleRepository.findByRoom_RoomIdOrderByStartTimeAsc(roomId);
+    }
+
+    // 멤버 강퇴 로직-소속 분반 아이디(Room)를 제거
+    @Transactional
+    public void kickMember(Long roomId, Long targetMemberId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
+
+        Member member = memberRepository.findById(targetMemberId)
+                .orElseThrow(() -> new IllegalArgumentException("대상 멤버를 찾을 수 없습니다."));
+
+        // 멤버가 해당 분반 소속인지 확인
+        if (member.getRoom() == null || !member.getRoom().getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("해당 분반에 소속된 멤버가 아닙니다.");
+        }
+
+        // 1. Room 엔티티의 멤버 리스트에서 제거
+        room.getMembers().remove(member);
+
+        // 2. Member 엔티티의 Room 참조를 null로 설정
+        member.setRoom(null);
+
+        // 3. 역할은 기존 USER(일반 유저) 상태를 유지
+        member.setRole(Role.USER);
     }
 }
