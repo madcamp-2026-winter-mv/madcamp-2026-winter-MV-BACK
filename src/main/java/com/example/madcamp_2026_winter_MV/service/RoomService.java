@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -37,7 +39,7 @@ public class RoomService {
         room.addMember(member);
     }
 
-    // [기본] 발표자 랜덤 선정 로직
+    // 발표자 랜덤 선정 로직
     @Transactional
     public Member pickPresenter(Long roomId) {
         Room room = roomRepository.findById(roomId)
@@ -61,7 +63,7 @@ public class RoomService {
 
         // 선정된 멤버 횟수 증가 및 룸에 현재 발표자로 등록
         selected.setPresentationCount(selected.getPresentationCount() + 1);
-        room.setCurrentPresenterId(selected.getMemberId());
+        room.updatePresenter(selected.getMemberId());
 
         return selected;
     }
@@ -83,5 +85,60 @@ public class RoomService {
 
         // 새로운 다음 발표자 선정
         return pickPresenter(roomId);
+    }
+
+    // 운영진용 초대 코드 생성
+    @Transactional
+    public String generateInviteCode(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 분반이 존재하지 않습니다."));
+
+        // 8자리 무작위 초대 코드 생성
+        String newCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        room.setInviteCode(newCode);
+
+        return newCode;
+    }
+
+    // 모든 분반 목록 조회
+    public List<Room> getAllRooms() {
+        return roomRepository.findAll();
+    }
+
+    // 출석 시작 로직
+    @Transactional
+    public void startAttendance(Long roomId, int minutes) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
+
+        room.incrementTotalSessions(); // 전체 세션 수 증가
+        room.startAttendance(minutes); // 마감 시간 설정 및 활성화
+    }
+
+    // 출석 제출 로직
+    @Transactional
+    public void submitAttendance(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Room room = member.getRoom();
+        if (room == null) throw new IllegalStateException("소속된 분반이 없습니다.");
+
+        // 출석 마감 시간 및 활성화 여부 체크
+        if (!room.isAttendanceActive() || room.getAttendanceEndTime() == null ||
+                LocalDateTime.now().isAfter(room.getAttendanceEndTime())) {
+            room.stopAttendance(); // 시간이 지났으면 상태 업데이트
+            throw new IllegalStateException("출석 가능 시간이 아닙니다.");
+        }
+
+        // 출석 횟수 증가
+        member.setAttendanceCount(member.getAttendanceCount() + 1);
+    }
+    @Transactional
+    public void stopAttendance(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
+
+        room.stopAttendance();
     }
 }
