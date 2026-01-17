@@ -22,7 +22,7 @@ public class MemberController {
     // 1. 내 정보 및 통계 조회
     @GetMapping("/me")
     public ResponseEntity<MemberResponseDto> getMyInfo(@AuthenticationPrincipal OAuth2User principal) {
-        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        String email = principal.getAttribute("email");
         return ResponseEntity.ok(memberService.getMyInfo(email));
     }
 
@@ -32,7 +32,7 @@ public class MemberController {
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal OAuth2User principal) {
 
-        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        String email = principal.getAttribute("email");
         String newNickname = body.get("nickname");
 
         memberService.updateNickname(email, newNickname);
@@ -45,7 +45,7 @@ public class MemberController {
             @RequestBody Map<String, Boolean> body,
             @AuthenticationPrincipal OAuth2User principal) {
 
-        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        String email = principal.getAttribute("email");
         boolean allowAlarm = body.get("allowAlarm");
 
         boolean updatedStatus = memberService.updateAlarmStatus(email, allowAlarm);
@@ -65,7 +65,7 @@ public class MemberController {
     // 5. 분반 탈퇴
     @DeleteMapping("/me/room")
     public ResponseEntity<String> leaveRoom(@AuthenticationPrincipal OAuth2User principal) {
-        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
+        String email = principal.getAttribute("email");
         memberService.leaveRoom(email);
         return ResponseEntity.ok("분반에서 탈퇴하였습니다.");
     }
