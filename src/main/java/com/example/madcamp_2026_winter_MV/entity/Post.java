@@ -62,6 +62,9 @@ public class Post {
     @Builder.Default
     private Integer currentParticipants = 0;
 
+    @Builder.Default
+    private boolean isClosed = false;
+
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<VoteOption> voteOptions = new ArrayList<>();
@@ -82,5 +85,11 @@ public class Post {
     // 모집 중인지 여부 확인
     public boolean isPartyFull() {
         return currentParticipants >= maxParticipants;
+    }
+
+    // 마감 여부를 판단하는 비즈니스 로직 추가
+    public boolean isVoteExpired() {
+        // 수동 마감되었거나, 생성된 지 24시간이 지났으면 true
+        return this.isClosed || this.createdAt.isBefore(LocalDateTime.now().minusHours(24));
     }
 }

@@ -56,4 +56,17 @@ public class VoteController {
 
         return ResponseEntity.ok(response);
     }
+
+    // 투표 수동 종료 (작성자 전용)
+    @PatchMapping("/{postId}/close")
+    public ResponseEntity<String> closeVote(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        // 로그인된 사용자의 이메일 가져오기
+        String email = principal.getAttribute("email");
+
+        voteService.closeVote(email, postId);
+        return ResponseEntity.ok("투표가 성공적으로 마감되었습니다.");
+    }
 }
