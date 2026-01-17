@@ -12,7 +12,7 @@ import lombok.*;
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long categoryId;;
     // 게시판 종류 구분 엔티티
     @Column(nullable = false, length = 50)
     private String name;

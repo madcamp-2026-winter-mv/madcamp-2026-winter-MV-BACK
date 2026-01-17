@@ -28,12 +28,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 5. 내가 댓글을 단 중복 없는 게시글 목록 조회
     List<Post> findDistinctPostsByComments_Member(Member member);
 
-    // 6. 특정 카테고리(게시판 종류)에 해당하는 모든 글 조회 (공통 게시판용)
+    // 6.  Category 엔티티의 categoryId를 참조
     List<Post> findByCategory_CategoryId(Long categoryId);
 
-    // 7. 좋아요가 많은 순서대로 게시글 조회 (실시간 HOT 3용)
+    // 7. 좋아요 수 기준 인기 게시글 조회
     @Query("SELECT p FROM Post p LEFT JOIN p.likes l GROUP BY p ORDER BY COUNT(l) DESC")
-    List<Post> findTop3ByOrderByLikesSizeDesc(Pageable pageable);
+    List<Post> findHotPosts(Pageable pageable);
 
     // 8. 특정 타입의 게시글 중 제목에 특정 단어가 포함된 게시글 조회 (검색 기능용)
     List<Post> findByTypeAndTitleContaining(PostType type, String title);
