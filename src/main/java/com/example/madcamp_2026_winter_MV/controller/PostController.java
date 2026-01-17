@@ -2,10 +2,8 @@ package com.example.madcamp_2026_winter_MV.controller;
 
 import com.example.madcamp_2026_winter_MV.dto.PostRequestDto;
 import com.example.madcamp_2026_winter_MV.dto.PostResponseDto;
-import com.example.madcamp_2026_winter_MV.entity.Comment;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.service.PostService;
-import com.example.madcamp_2026_winter_MV.service.CommentService; // 추가
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,7 +19,6 @@ import java.util.Map;
 public class PostController {
 
     private final PostService postService;
-    private final CommentService commentService; // CommentService 주입 추가
 
     @PostMapping
     public ResponseEntity<PostResponseDto> createPost(@RequestBody PostRequestDto dto,
@@ -50,25 +47,8 @@ public class PostController {
         return ResponseEntity.ok(postDetail);
     }
 
-    @PostMapping("/{postId}/comments")
-    public ResponseEntity<PostResponseDto.CommentResponseDto> createComment(@PathVariable Long postId,
-                                                                            @RequestBody Map<String, String> body,
-                                                                            @AuthenticationPrincipal OAuth2User principal) {
-        String email = principal.getAttribute("email");
-        String content = body.get("content");
-
-        // PostService 대신 CommentService를 호출하여 댓글 생성 및 알림 로직 실행
-        Comment comment = commentService.createComment(postId, content, email);
-
-        PostResponseDto.CommentResponseDto response = PostResponseDto.CommentResponseDto.builder()
-                .commentId(comment.getCommentId())
-                .content(comment.getContent())
-                .authorNickname(comment.getMember().getNickname())
-                .createdAt(comment.getCreatedAt())
-                .build();
-
-        return ResponseEntity.ok(response);
-    }
+    // [삭제됨] @PostMapping("/{postId}/comments") 메서드는 CommentController와 중복되어 제거되었습니다.
+    // 댓글 생성은 이제 /api/comments 혹은 별도의 CommentController API를 사용합니다.
 
     @GetMapping("/me")
     public ResponseEntity<List<PostResponseDto>> getMyPosts(@AuthenticationPrincipal OAuth2User principal) {
