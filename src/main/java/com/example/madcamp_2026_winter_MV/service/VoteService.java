@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,21 +21,26 @@ public class VoteService {
 
     @Transactional
     public void castVote(String email, Long postId, Long optionId) {
-        // 0. 이메일로 현재 로그인한 회원 찾기
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-        // 1. 이미 투표했는지 확인 (중복 방지)
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+        // 1. 작성자가 수동으로 종료했는지 확인 (Post에 isClosed 필드가 있다고 가정)
+        // 2. 혹은 생성된지 24시간이 지났는지 확인
+        if (post.isClosed() || (post.getCreatedAt() != null && post.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24)))) {
+            throw new IllegalStateException("이미 마감된 투표입니다.");
+        }
+
+        // 중복 투표 확인
         if (voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId)) {
             throw new IllegalStateException("이미 이 투표에 참여하셨습니다.");
         }
 
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
         VoteOption option = voteOptionRepository.findById(optionId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 선택지입니다."));
 
-        // 2. 투표 기록 저장
         VoteRecord record = VoteRecord.builder()
                 .member(member)
                 .post(post)
@@ -42,28 +48,47 @@ public class VoteService {
                 .build();
         voteRecordRepository.save(record);
 
-        // 3. 선택지 카운트 증가
         option.setCount(option.getCount() + 1);
     }
 
-    // 투표 옵션 및 결과 조회
+    // 작성자가 직접 투표를 종료하는 기능 추가
+    @Transactional
+    public void closeVote(String email, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+        // 글쓴이 본인인지 확인
+        if (!post.getMember().getEmail().equals(email)) {
+            throw new IllegalStateException("작성자만 투표를 종료할 수 있습니다.");
+        }
+
+        post.setClosed(true); // Post 엔티티에 @Setter 혹은 close() 메서드 필요
+    }
+
     public List<VoteOption> getVoteDetails(String email, Long postId) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-        // 이 게시글에 투표했는지 확인
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+
         boolean hasVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
+
+        // 투표 결과 공개 조건: 사용자가 투표했거나, 작성자가 마감했거나, 생성된지 24시간이 지난 경우
+        boolean showResult = hasVoted || post.isClosed() || (post.getCreatedAt() != null && post.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24)));
 
         List<VoteOption> options = voteOptionRepository.findByPostPostId(postId);
 
-        // 투표를 안 했으면 익명성을 위해 결과(count)를 0으로 가려서 반환
-        if (!hasVoted) {
+        if (!showResult) {
+            // 결과 숨김 처리가 필요한 경우: count를 0으로 설정한 가짜 객체 리스트 반환
             return options.stream()
-                    .map(option -> VoteOption.builder()
-                            .id(option.getId())
-                            .content(option.getContent())
-                            .count(0) // 결과 숨김
-                            .build())
+                    .map(option -> {
+                        VoteOption dummy = new VoteOption();
+                        dummy.setId(option.getId());
+                        dummy.setContent(option.getContent());
+                        dummy.setCount(0); // 결과 숨김
+                        return dummy;
+                    })
                     .toList();
         }
 
