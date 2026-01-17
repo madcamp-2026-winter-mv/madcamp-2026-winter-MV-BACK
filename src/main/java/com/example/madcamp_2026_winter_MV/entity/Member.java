@@ -2,6 +2,8 @@ package com.example.madcamp_2026_winter_MV.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -22,7 +24,7 @@ public class Member {
     @Column(nullable = false)
     private String realName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
     @Column(columnDefinition = "TEXT")
@@ -30,7 +32,8 @@ public class Member {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;
+    @Builder.Default
+    private Role role = Role.USER;
 
     @Builder.Default
     private int presentationCount = 0;
@@ -42,10 +45,29 @@ public class Member {
     @JoinColumn(name = "room_id")
     private Room room;
 
-    // OAuth2 로그인 시 유저 정보 업데이트를 위한 메서드
+    @Builder.Default
+    private int attendanceCount = 0;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Post> posts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
+    // OAuth2 유저 정보 업데이트
     public Member update(String realName, String profileImage) {
         this.realName = realName;
         this.profileImage = profileImage;
         return this;
+    }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void updateAlarm(boolean allowAlarm) {
+        this.allowAlarm = allowAlarm;
     }
 }

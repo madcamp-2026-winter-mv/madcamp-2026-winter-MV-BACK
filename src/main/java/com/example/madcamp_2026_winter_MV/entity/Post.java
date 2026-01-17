@@ -92,4 +92,11 @@ public class Post {
         // 수동 마감되었거나, 생성된 지 24시간이 지났으면 true
         return this.isClosed || this.createdAt.isBefore(LocalDateTime.now().minusHours(24));
     }
+
+    public void setMember(Member member) {
+        this.member = member;
+        if (!member.getPosts().contains(this)) {
+            member.getPosts().add(this);
+        }
+    }
 }
