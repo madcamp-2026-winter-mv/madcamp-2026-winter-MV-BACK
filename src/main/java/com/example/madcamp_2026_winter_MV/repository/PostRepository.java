@@ -25,4 +25,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 5. 내가 댓글을 단 중복 없는 게시글 목록 조회
     List<Post> findDistinctPostsByComments_Member(Member member);
+
+    // 6. 특정 카테고리(게시판 종류)에 해당하는 모든 글 조회 (공통 게시판용)
+    List<Post> findByCategory_CategoryId(Long categoryId);
 }

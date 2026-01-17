@@ -81,4 +81,41 @@ public class PostController {
         String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
         return ResponseEntity.ok(postService.getPostsICommented(email));
     }
+
+
+    // 3. 게시글 수정 (PATCH /api/posts/{postId})
+    @PatchMapping("/{postId}")
+    public ResponseEntity<PostResponseDto> updatePost(
+            @PathVariable Long postId,
+            @RequestBody PostRequestDto dto,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        String email = principal.getAttribute("email");
+        postService.updatePost(postId, dto, email);
+        return ResponseEntity.ok(postService.getPostDetail(postId, email));
+    }
+
+    // 4. 게시글 삭제 (DELETE /api/posts/{postId})
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<String> deletePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        String email = principal.getAttribute("email");
+        postService.deletePost(postId, email);
+        return ResponseEntity.ok("게시글이 삭제되었습니다.");
+    }
+
+    // 5. 우리 반 전용 글 목록 조회
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<List<PostResponseDto>> getPostsByRoom(@PathVariable Long roomId) {
+        return ResponseEntity.ok(postService.getPostsByRoom(roomId));
+    }
+
+    // 6.카테고리별 공통 글 목록 조회
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<PostResponseDto>> getPostsByCategory(@PathVariable Long categoryId) {
+        return ResponseEntity.ok(postService.getPostsByCategory(categoryId));
+    }
+
 }

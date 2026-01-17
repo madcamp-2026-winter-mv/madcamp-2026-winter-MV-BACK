@@ -184,4 +184,51 @@ public class PostService {
                 .maxParticipants(post.getMaxParticipants())
                 .build();
     }
+
+
+    @Transactional
+    public void updatePost(Long postId, PostRequestDto dto, String email) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+
+        // 작성자 본인 확인
+        if (!post.getMember().getEmail().equals(email)) {
+            throw new RuntimeException("게시글 수정 권한이 없습니다.");
+        }
+
+        // 기본 정보 업데이트
+        post.setTitle(dto.getTitle());
+        post.setContent(dto.getContent());
+
+        // 필요한 경우 카테고리 등 다른 필드 업데이트 로직 추가 가능
+    }
+
+    @Transactional
+    public void deletePost(Long postId, String email) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+
+        // 작성자 본인 확인
+        if (!post.getMember().getEmail().equals(email)) {
+            throw new RuntimeException("게시글 삭제 권한이 없습니다.");
+        }
+
+        postRepository.delete(post);
+    }
+
+    // 1. [분반 공간] 특정 분반 ID로 글 목록 조회
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> getPostsByRoom(Long roomId) {
+        return postRepository.findByRoom_RoomId(roomId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    // 2. [공통 게시판] 특정 카테고리 ID로 글 목록 조회
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> getPostsByCategory(Long categoryId) {
+        return postRepository.findByCategory_CategoryId(categoryId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
 }
