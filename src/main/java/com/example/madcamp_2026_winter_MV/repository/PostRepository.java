@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -37,4 +38,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 8. 특정 타입의 게시글 중 제목에 특정 단어가 포함된 게시글 조회 (검색 기능용)
     List<Post> findByTypeAndTitleContaining(PostType type, String title);
+
+    // 9. 종료되지않은 게시글
+    List<Post> findByTypeAndIsClosedFalseAndCreatedAtBefore(PostType type, LocalDateTime dateTime);
 }

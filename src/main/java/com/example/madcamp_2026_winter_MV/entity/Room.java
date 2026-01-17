@@ -59,7 +59,6 @@ public class Room {
         this.isAttendanceActive = active;
     }
 
-    // --- 추가된 관리 메서드 ---
 
     // 분반 이름 수정
     public void updateName(String name) {
@@ -86,5 +85,12 @@ public class Room {
     // 발표자 업데이트
     public void updatePresenter(Long memberId) {
         this.currentPresenterId = memberId;
+    }
+
+    // 내일 발표자
+    private Long nextPresenterId;
+
+    public void setNextPresenterId(Long nextPresenterId) {
+        this.nextPresenterId = nextPresenterId;
     }
 }
