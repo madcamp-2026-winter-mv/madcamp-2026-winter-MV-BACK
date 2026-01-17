@@ -28,8 +28,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. "/" (홈)와 "/api/posts" (게시글 목록)는 로그인 없이도 볼 수 있게 허용
-                        .requestMatchers("/", "/api/posts", "/login/**", "/oauth2/**", "/api/auth/me").permitAll()
+                        // 1. 허용 경로
+                        .requestMatchers(
+                                "/",
+                                "/api/posts",
+                                "/login/**",
+                                "/oauth2/**",
+                                "/api/auth/me",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         // 2. 그 외의 상세 페이지나 글쓰기 등은 로그인이 필요함
                         .anyRequest().authenticated()
                 )

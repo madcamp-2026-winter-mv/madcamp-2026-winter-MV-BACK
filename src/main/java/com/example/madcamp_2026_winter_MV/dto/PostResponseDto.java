@@ -35,4 +35,7 @@ public class PostResponseDto {
         private String authorNickname;
         private LocalDateTime createdAt;
     }
+    // 게시글 좋아요 정보
+    private int likeCount;
+    private boolean isLiked;
 }
