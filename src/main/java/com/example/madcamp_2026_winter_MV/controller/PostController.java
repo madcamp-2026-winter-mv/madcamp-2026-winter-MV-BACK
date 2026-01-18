@@ -47,8 +47,6 @@ public class PostController {
         return ResponseEntity.ok(postDetail);
     }
 
-    // [삭제됨] @PostMapping("/{postId}/comments") 메서드는 CommentController와 중복되어 제거되었습니다.
-    // 댓글 생성은 이제 /api/comments 혹은 별도의 CommentController API를 사용합니다.
 
     @GetMapping("/me")
     public ResponseEntity<List<PostResponseDto>> getMyPosts(@AuthenticationPrincipal OAuth2User principal) {
@@ -109,5 +107,10 @@ public class PostController {
         String email = principal.getAttribute("email");
         postService.toggleLike(postId, email);
         return ResponseEntity.ok("좋아요 상태가 변경되었습니다.");
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<PostResponseDto>> searchPosts(@RequestParam String keyword) {
+        return ResponseEntity.ok(postService.searchPosts(keyword));
     }
 }
