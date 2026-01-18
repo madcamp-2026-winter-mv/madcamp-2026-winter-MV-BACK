@@ -28,10 +28,26 @@ public class PostService {
     private final VoteService voteService;
     private final ChatRoomRepository chatRoomRepository;
 
+    // [추가] 몰입캠프 참여자(1-4분반) 검증 로직
+    private void validateCampParticipant(Member member) {
+        if (member.getRoom() == null) {
+            throw new IllegalStateException("몰입캠프 참여자만 접근 가능합니다.");
+        }
+        Long roomId = member.getRoom().getRoomId();
+        // 분반 ID가 1, 2, 3, 4 중 하나여야 함
+        if (roomId < 1 || roomId > 4) {
+            throw new IllegalStateException("몰입캠프 참여자만 접근 가능합니다.");
+        }
+    }
+
     @Transactional
     public Post createPost(PostRequestDto dto, String email) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // [추가] 글쓰기 권한 체크
+        validateCampParticipant(member);
+
         Room room = roomRepository.findById(dto.getRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
         Category category = categoryRepository.findById(dto.getCategoryId())
@@ -75,6 +91,9 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow();
         Member member = memberRepository.findByEmail(email).orElseThrow();
 
+        // [추가] 상세 보기 권한 체크
+        validateCampParticipant(member);
+
         boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
         boolean isLiked = likeRepository.findByMemberAndPost(member, post).isPresent();
 
@@ -113,11 +132,31 @@ public class PostService {
     }
 
     private PostResponseDto convertToDto(Post post) {
+        // [변경] 목록 노출 시 내용 요약 (제목 + 내용 조금)
+        String contentSummary = post.getContent();
+        if (contentSummary != null && contentSummary.length() > 50) {
+            contentSummary = contentSummary.substring(0, 50) + "...";
+        }
+
         return PostResponseDto.builder()
-                .postId(post.getPostId()).title(post.getTitle()).content(post.getContent()).type(post.getType())
-                .authorNickname(post.getMember().getNickname()).createdAt(post.getCreatedAt())
-                .currentParticipants(post.getCurrentParticipants()).maxParticipants(post.getMaxParticipants())
-                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0).build();
+                .postId(post.getPostId())
+                .title(post.getTitle())
+                .content(contentSummary)
+                .type(post.getType())
+                .authorNickname(post.getMember().getNickname())
+                .createdAt(post.getCreatedAt())
+                .currentParticipants(post.getCurrentParticipants())
+                .maxParticipants(post.getMaxParticipants())
+                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponseDto> searchPosts(String keyword) {
+        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional

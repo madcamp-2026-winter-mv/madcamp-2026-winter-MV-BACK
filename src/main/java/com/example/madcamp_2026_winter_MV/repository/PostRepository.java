@@ -41,4 +41,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 9. 종료되지않은 게시글
     List<Post> findByTypeAndIsClosedFalseAndCreatedAtBefore(PostType type, LocalDateTime dateTime);
+
+    // 10.제목 혹은 내용에 키워드가 포함된 글 검색
+    List<Post> findByTitleContainingOrContentContaining(String title, String content);
 }

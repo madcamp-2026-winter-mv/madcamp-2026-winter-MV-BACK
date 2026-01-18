@@ -16,7 +16,7 @@ public class PartyController {
 
     private final PartyService partyService;
 
-    // 1. 팟 모집 확정 및 채팅방 생성
+    // 1. 팟 모집 확정 및 채팅방 생성 (몰입캠프 참여자만 가능)
     @PostMapping("/{postId}/confirm")
     public ResponseEntity<Long> confirmParty(
             @PathVariable Long postId,

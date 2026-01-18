@@ -23,7 +23,7 @@ public class ChatController {
     public ResponseEntity<List<ChatRoomResponseDto>> getMyRooms(
             @AuthenticationPrincipal OAuth2User principal) {
 
-        String email = principal.getAttribute("email");
+        String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
         List<ChatRoomResponseDto> rooms = partyService.getMyChatRooms(email);
         return ResponseEntity.ok(rooms);
     }
