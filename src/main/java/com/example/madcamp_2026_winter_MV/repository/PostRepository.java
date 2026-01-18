@@ -3,6 +3,7 @@ package com.example.madcamp_2026_winter_MV.repository;
 import com.example.madcamp_2026_winter_MV.entity.Member;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.entity.PostType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -44,4 +45,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 10.제목 혹은 내용에 키워드가 포함된 글 검색
     List<Post> findByTitleContainingOrContentContaining(String title, String content);
+
+    // 11. 카테고리 이름으로 검색
+    Page<Post> findByCategory_Name(String name, Pageable pageable);
+
+    // 12. 특정 타입의 게시글 페이징 조회
+    Page<Post> findByType(PostType type, Pageable pageable);
 }

@@ -6,9 +6,13 @@ import com.example.madcamp_2026_winter_MV.dto.VoteDto;
 import com.example.madcamp_2026_winter_MV.entity.*;
 import com.example.madcamp_2026_winter_MV.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +162,7 @@ public class PostService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional
     public void updatePost(Long postId, PostRequestDto dto, String email) {
         Post post = postRepository.findById(postId).orElseThrow();
@@ -213,5 +217,82 @@ public class PostService {
         if (existingLike.isPresent()) likeRepository.delete(existingLike.get());
         else likeRepository.save(Like.builder().member(member).post(post).build());
         if (likeRepository.countByPost(post) > 5) post.setHot(true);
+    }
+
+    // 1. 탭(카테고리)에 따른 게시글 목록 조회
+    @Transactional(readOnly = true)
+    public Page<PostResponseDto> getPostsForTab(String categoryName, Pageable pageable) {
+        Page<Post> posts;
+
+        if (categoryName == null || categoryName.equals("전체")) {
+            posts = postRepository.findAll(pageable);
+        } else if (categoryName.equals("팟모집")) {
+            posts = postRepository.findByType(PostType.PARTY, pageable);
+        } else {
+            posts = postRepository.findByCategory_Name(categoryName, pageable);
+        }
+
+        // 프론트엔드 전용 DTO 변환 메서드 사용
+        return posts.map(this::convertToFrontendDto);
+    }
+
+    // 2. 프론트엔드 포맷(author 객체, partyInfo 객체 등)에 맞춘 변환기
+    private PostResponseDto convertToFrontendDto(Post post) {
+        String timeAgo = formatTimeAgo(post.getCreatedAt());
+
+        // 작성자 객체 생성
+        String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
+                .nickname(nickname)
+                .isAnonymous(post.isAnonymous())
+                .imageUrl(null)
+                .build();
+
+        // 팟모집 정보 객체 생성 (타입이 PARTY일 때만)
+        PostResponseDto.PartyInfoDto partyInfoDto = null;
+        if (post.getType() == PostType.PARTY) {
+            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
+                    .currentCount(post.getCurrentParticipants())
+                    .maxCount(post.getMaxParticipants())
+                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
+                    .build();
+        }
+
+        // 내용 요약
+        String contentSummary = post.getContent();
+        if (contentSummary != null && contentSummary.length() > 80) {
+            contentSummary = contentSummary.substring(0, 80) + "...";
+        }
+
+        return PostResponseDto.builder()
+                .postId(post.getPostId())
+                .title(post.getTitle())
+                .content(contentSummary)
+                .type(post.getType())
+                .authorNickname(nickname)
+                .createdAt(post.getCreatedAt())
+                .currentParticipants(post.getCurrentParticipants())
+                .maxParticipants(post.getMaxParticipants())
+                .likeCount(post.getLikes().size())
+                .categoryName(post.getCategory().getName())
+                .timeAgo(timeAgo)
+                .author(authorDto)
+                .partyInfo(partyInfoDto)
+                .build();
+    }
+
+    // 3. 시간 계산 유틸
+    private String formatTimeAgo(LocalDateTime time) {
+        if (time == null) return "";
+        Duration duration = Duration.between(time, LocalDateTime.now());
+        long min = duration.toMinutes();
+
+        if (min < 1) return "방금 전";
+        if (min < 60) return min + "분 전";
+
+        long hour = duration.toHours();
+        if (hour < 24) return hour + "시간 전";
+
+        return time.toLocalDate().toString();
     }
 }
