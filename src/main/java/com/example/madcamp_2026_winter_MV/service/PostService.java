@@ -158,15 +158,7 @@ public class PostService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-
-    @Transactional(readOnly = true)
-    public List<PostResponseDto> searchPosts(String keyword) {
-        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword)
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
+    
     @Transactional
     public void updatePost(Long postId, PostRequestDto dto, String email) {
         Post post = postRepository.findById(postId).orElseThrow();
