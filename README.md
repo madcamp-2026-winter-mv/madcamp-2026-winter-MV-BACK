@@ -6,67 +6,58 @@
 ## 배포 주소
 
 ---
-## Tech Stack (Backend)
+## 🛠 Tech Stack
 
-* **Framework:** Spring Boot 3.x
+* **Framework:** Spring Boot 3.4.1
 * **Language:** Java 17
-* **Security:** Spring Security, OAuth 2.0 (Google)
-* **Data:** Spring Data JPA, QueryDSL, MySQL 8.0, Redis (Caching)
-* **Infrastructure:** AWS (EC2, S3, RDS), Docker
-* **AI:** OpenAI API (GPT-4)
-* **Communication:** WebSocket (STOMP)
+* **Security:** Spring Security, **OAuth 2.0 (Google Login)**
+* **Database:** MySQL 8.0, **Spring Data JPA**
+* **Real-time:** **WebSocket (STOMP)**
+* **Build Tool:** Gradle
 
 ---
 
-## System Architecture
+### 1. 분반 격리 및 권한 관리 시스템 (Multi-tenancy)
+
+* **초대 코드 기반 입장:** 8자리 난수 초대 코드를 통한 분반 그룹핑 로직 구현.
+* **Role-Based Access Control (RBAC):** `OWNER(운영진)`, `USER(일반)` 권한 계층 설계.
+* **본인 분반 검증:** 모든 API 요청 시 유저의 소속 분반 ID를 검증하여 타 분반 데이터 접근을 원천 차단.
+
+### 2. 실시간 팟(Party) 매칭 및 채팅 엔진
+
+* **게시글-채팅방 동기화:** 팟 모집 게시글 제목 수정 시 연결된 채팅방 이름이 실시간으로 동기화되도록 이벤트 기반 로직 설계.
+* **동적 인원 관리:** 팟 참여/이탈 시 채팅방 가용 상태(`isClosed`)가 실시간 갱신되어 추가 모집 여부 결정.
+* **STOMP 메시징:** WebSocket을 활용하여 팟 확정 시 참여자 간의 지연 없는 실시간 소통 지원.
+
+### 3. 데이터 기반 출석 및 발표자 자동화
+
+* **스마트 출석 시스템:** 운영진/발표자가 설정한 제한 시간 동안만 활성화되는 Time-limited 출석 로직.
+* **발표자 선정 알고리즘:** 분반 내 멤버 중 랜덤 선택 기능을 제공하며, 운영진의 재선정 권한 부여.
+
+### 4. 고성능 커뮤니티 및 투표 시스템
+
+* **실시간 투표 브로드캐스팅:** 투표 참여 시 즉각적인 카운트 업데이트 및 중복 투표 방지 로직 적용.
+* **HOT 게시글 선정:** 좋아요 5개 달성 시 실시간으로 `is_hot` 상태를 갱신하여 메인 대시보드 노출.
+* **확장 가능한 카테고리:** 자유, 질문, 팟모집, 정보공유 등 PostType별 상이한 비즈니스 로직(예: 팟 인원 관리) 처리.
+
+### 5. 수익 모델 및 외부 노출 영역 (Ads)
+
+* **광고 관리 API:** 대시보드 우측 영역에 노출될 광고 이미지 및 노출 순서를 관리하는 독립적 도메인 구축.
 
 ---
 
-## Key Backend Features & Implementation
+## 📑 API Endpoints (Core)
 
-### 1. 분반 기반 멀티테넌시 권한 설계
-
-* **초대 코드 시스템:** 6자리 난수 코드를 통한 분반 입장 및 그룹핑.
-* **RBAC (Role-Based Access Control):** `OWNER`, `USER` 권한 계층을 설계하여 운영진 전용 기능(출석 시작, 일정 등록, 강퇴)에 대한 접근 제어.
-
-### 2. 스마트 출석 및 가중치 랜덤 알고리즘
-
-* **IP Filtering:** 캠퍼스 공인 IP 대역(CIDR) 비교를 통한 부정 출석 방지 로직.
-* **발표자 선정 로직:** * 발표 횟수가 적은 사람에게 우선순위를 부여하는 **Weighted Random Selection** 구현
-* 동시성 이슈를 방지하기 위한 트랜잭션 격리 수준 관리.
-
-
-### 3. AI 기반 스크럼 자동화 및 데이터 전처리
-
-* **OpenAI Prompt Engineering:** 유저의 단순 키워드 입력을 격식 있는 스크럼 일지로 변환하는 비동기(`@Async`) API 설계.
-* **Vector Similarity (Planned):** 분실물 매칭을 위한 텍스트 임베딩 유사도 분석 로직 준비.
-
-### 4. 고성능 커뮤니티 엔진
-
-* **인기글(HOT) 선정 스케줄러:** Spring Scheduler를 활용하여 10분마다 좋아요 수(5개 이상)를 집계하고 `is_hot` 상태를 갱신하는 배치 작업.
-* **QueryDSL 검색:** 복잡한 동적 쿼리(카테고리, 검색어, 기간 필터링)의 성능 최적화 및 Type-safe한 쿼리 작성.
-* **팟(Party) 매칭:** N:M 관계의 참여자 관리 및 매칭 확정 시 실시간 FCM(Firebase Cloud Messaging) 알림 전송.
-
-### 5. 실시간 인터랙션 (WebSocket)
-
-* **Live Voting:** 투표 참여 시 전역 브로드캐스팅을 통해 결과 그래프를 실시간 갱신.
-* **Real-time Notice:** 운영진의 긴급 공지나 출석 시작 알림을 지연 시간 없이 전달.
+|
 
 ---
 
-## Database ERD
+## 📈 성과 및 기대 효과
+
+* **운영 효율 증대:** 수동으로 관리하던 출석 및 발표자 선정을 자동화하여 분반 운영 시간 단축.
+* **커뮤니티 활성화:** 실시간 팟 매칭 기능을 통해 캠퍼스 내 온/오프라인 네트워킹 기회 확대.
+* **보안성 강화:** OAuth 2.0과 소속 인증 로직을 통해 캠퍼스 외부인의 데이터 접근 차단.
 
 ---
 
-## API Endpoints (Core)
 
-| Category | Endpoint | Method | Description |
-
-
----
-
-## Deployment & Infrastructure
-
----
-
-## 개발 및 성과 (Expected Outcomes)
