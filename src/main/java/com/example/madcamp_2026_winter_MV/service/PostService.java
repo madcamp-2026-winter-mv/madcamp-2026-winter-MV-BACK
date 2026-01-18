@@ -26,6 +26,7 @@ public class PostService {
     private final VoteRecordRepository voteRecordRepository;
     private final LikeRepository likeRepository;
     private final VoteService voteService;
+    private final ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public Post createPost(PostRequestDto dto, String email) {
@@ -125,6 +126,10 @@ public class PostService {
         if (!post.getMember().getEmail().equals(email)) throw new RuntimeException("권한이 없습니다.");
         post.setTitle(dto.getTitle());
         post.setContent(dto.getContent());
+
+        chatRoomRepository.findByPostId(postId).ifPresent(chatRoom -> {
+            chatRoom.setRoomName(dto.getTitle());
+        });
     }
 
     @Transactional
