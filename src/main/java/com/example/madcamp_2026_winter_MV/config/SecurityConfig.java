@@ -31,7 +31,7 @@ public class SecurityConfig {
                         // 1. 허용 경로
                         .requestMatchers(
                                 "/",
-                                "/api/posts",
+                                "/api/posts/**",
                                 "/login/**",
                                 "/oauth2/**",
                                 "/api/auth/me",
@@ -54,10 +54,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList(
+        configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://madcamp-view.com",
                 "http://madcamp-view.com",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://localhost:8080"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
