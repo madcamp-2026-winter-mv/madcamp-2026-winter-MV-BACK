@@ -2,6 +2,7 @@ package com.example.madcamp_2026_winter_MV.config;
 
 import com.example.madcamp_2026_winter_MV.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +22,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
+
+    @Value("${app.oauth.success-url:https://madcamp-view.com/dashboard}")
+    private String oauthSuccessUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -45,7 +49,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .defaultSuccessUrl("https://madcamp-view.com/dashboard", true)
+                        .defaultSuccessUrl(oauthSuccessUrl, true)
                 );
 
         return http.build();
