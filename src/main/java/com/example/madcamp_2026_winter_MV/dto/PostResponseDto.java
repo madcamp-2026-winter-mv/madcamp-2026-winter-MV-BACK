@@ -9,7 +9,7 @@ import java.util.List;
 @Getter @Builder
 @NoArgsConstructor @AllArgsConstructor
 public class PostResponseDto {
-    // === [기존 필드 유지] ===
+
     private Long postId;
     private String title;
     private String content;
@@ -26,6 +26,7 @@ public class PostResponseDto {
     private int likeCount;
     private boolean isLiked;
 
+    private boolean isAuthor;
 
     // 1. 카테고리 이름
     private String categoryName;
@@ -40,14 +41,17 @@ public class PostResponseDto {
     private PartyInfoDto partyInfo;
 
     @Getter @Builder
+    @NoArgsConstructor @AllArgsConstructor
     public static class CommentResponseDto {
         private Long commentId;
+        private Long memberId;
         private String content;
         private String authorNickname;
         private LocalDateTime createdAt;
     }
 
     @Getter @Builder
+    @NoArgsConstructor @AllArgsConstructor
     public static class AuthorDto {
         private String nickname;
         private boolean isAnonymous;
@@ -55,6 +59,7 @@ public class PostResponseDto {
     }
 
     @Getter @Builder
+    @NoArgsConstructor @AllArgsConstructor
     public static class PartyInfoDto {
         private int currentCount;
         private int maxCount;

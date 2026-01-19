@@ -21,8 +21,8 @@ public class DataInitializer implements CommandLineRunner {
         // 1. 기본 방 생성 (기획안의 MAD012)
         if (roomRepository.count() == 0) {
             roomRepository.save(Room.builder()
-                    .name("2025 겨울학기")
-                    .inviteCode("MAD012")
+                    .name("2026 겨울학기")
+                    .inviteCode("MAD226")
                     .build());
         }
 

@@ -32,7 +32,7 @@ public class PostService {
     private final VoteService voteService;
     private final ChatRoomRepository chatRoomRepository;
 
-    // [추가] 몰입캠프 참여자(1-4분반) 검증 로직
+    //  몰입캠프 참여자(1-4분반) 검증 로직
     private void validateCampParticipant(Member member) {
         if (member.getRoom() == null) {
             throw new IllegalStateException("몰입캠프 참여자만 접근 가능합니다.");
@@ -49,7 +49,7 @@ public class PostService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // [추가] 글쓰기 권한 체크
+        // 글쓰기 권한 체크
         validateCampParticipant(member);
 
         Room room = roomRepository.findById(dto.getRoomId())
@@ -95,7 +95,7 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow();
         Member member = memberRepository.findByEmail(email).orElseThrow();
 
-        // [추가] 상세 보기 권한 체크
+        // 상세 보기 권한 체크
         validateCampParticipant(member);
 
         boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
@@ -105,9 +105,11 @@ public class PostService {
                 .map(option -> VoteDto.VoteResponse.builder().optionId(option.getId()).content(option.getContent()).count(option.getCount()).build())
                 .collect(Collectors.toList());
 
+        //댓글 목록 빌드 시 memberId 포함
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> PostResponseDto.CommentResponseDto.builder()
                         .commentId(comment.getCommentId())
+                        .memberId(comment.getMember().getMemberId()) // 추가됨
                         .content(comment.getContent())
                         .authorNickname(comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음")
                         .createdAt(comment.getCreatedAt())
@@ -120,6 +122,7 @@ public class PostService {
                 .isVoted(isVoted).isLiked(isLiked).likeCount(post.getLikes().size())
                 .voteOptions(voteOptions).currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants()).comments(comments)
+                .isAuthor(post.getMember().getEmail().equals(email))
                 .build();
     }
 
