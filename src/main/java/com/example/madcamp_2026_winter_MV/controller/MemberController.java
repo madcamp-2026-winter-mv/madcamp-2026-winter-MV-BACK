@@ -3,6 +3,7 @@ package com.example.madcamp_2026_winter_MV.controller;
 import com.example.madcamp_2026_winter_MV.dto.MemberResponseDto;
 import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
 import com.example.madcamp_2026_winter_MV.service.MemberService;
+import com.example.madcamp_2026_winter_MV.service.RoomService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class MemberController {
 
     private final MemberService memberService;
     private final MemberRepository memberRepository;
+    private final RoomService roomService; // 2. RoomService 주입 추가 (이게 없어서 빨간줄이 뜬 겁니다)
 
     // 1. 내 정보 및 통계 조회
     @GetMapping("/me")
@@ -31,12 +33,11 @@ public class MemberController {
     // 2. 닉네임 중복 체크
     @GetMapping("/check/nickname")
     public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname) {
-        // true: 이미 존재(사용 불가), false: 존재하지 않음(사용 가능)
         boolean isDuplicate = memberRepository.existsByNickname(nickname);
         return ResponseEntity.ok(isDuplicate);
     }
 
-    // 3. 닉네임 수정 (서비스 내부에서 중복 체크 한 번 더 수행)
+    // 3. 닉네임 수정
     @PatchMapping("/me/nickname")
     public ResponseEntity<String> updateNickname(
             @RequestBody Map<String, String> body,
@@ -78,5 +79,19 @@ public class MemberController {
         String email = principal.getAttribute("email");
         memberService.leaveRoom(email);
         return ResponseEntity.ok("분반에서 탈퇴하였습니다.");
+    }
+
+    // 7. 분반 코드(8자리)로 분반 입장
+    @PostMapping("/me/room/join")
+    public ResponseEntity<String> joinRoom(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        String email = principal.getAttribute("email");
+        String inviteCode = body.get("inviteCode");
+
+        roomService.joinRoomByEmail(email, inviteCode);
+
+        return ResponseEntity.ok("분반에 성공적으로 입장하였습니다.");
     }
 }

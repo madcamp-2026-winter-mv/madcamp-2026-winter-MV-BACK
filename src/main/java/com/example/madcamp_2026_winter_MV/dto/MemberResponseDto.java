@@ -12,6 +12,7 @@ public class MemberResponseDto {
     private String nickname;
     private String realName;
     private String email;
+    private String profileImage;
     private String roomName;
     private Long roomId;
     private String role; // OWNER, ADMIN, MEMBER
