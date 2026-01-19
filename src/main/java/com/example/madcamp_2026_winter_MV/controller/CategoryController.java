@@ -52,4 +52,11 @@ public class CategoryController {
 
         return ResponseEntity.ok("카테고리가 생성되었습니다.");
     }
+
+    //3. 카테고리 이름 중복 확인 API
+    @GetMapping("/check")
+    public ResponseEntity<Map<String, Boolean>> checkDuplicate(@RequestParam String name) {
+        boolean exists = categoryRepository.existsByName(name);
+        return ResponseEntity.ok(Map.of("available", !exists));
+    }
 }
