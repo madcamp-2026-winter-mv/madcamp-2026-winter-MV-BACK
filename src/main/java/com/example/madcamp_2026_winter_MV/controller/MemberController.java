@@ -1,6 +1,7 @@
 package com.example.madcamp_2026_winter_MV.controller;
 
 import com.example.madcamp_2026_winter_MV.dto.MemberResponseDto;
+import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
 import com.example.madcamp_2026_winter_MV.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
 
     // 1. 내 정보 및 통계 조회
     @GetMapping("/me")
@@ -26,7 +28,15 @@ public class MemberController {
         return ResponseEntity.ok(memberService.getMyInfo(email));
     }
 
-    // 2. 닉네임 수정
+    // 2. 닉네임 중복 체크
+    @GetMapping("/check/nickname")
+    public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname) {
+        // true: 이미 존재(사용 불가), false: 존재하지 않음(사용 가능)
+        boolean isDuplicate = memberRepository.existsByNickname(nickname);
+        return ResponseEntity.ok(isDuplicate);
+    }
+
+    // 3. 닉네임 수정 (서비스 내부에서 중복 체크 한 번 더 수행)
     @PatchMapping("/me/nickname")
     public ResponseEntity<String> updateNickname(
             @RequestBody Map<String, String> body,
@@ -39,7 +49,7 @@ public class MemberController {
         return ResponseEntity.ok("닉네임이 성공적으로 수정되었습니다.");
     }
 
-    // 3. 알림 설정 토글
+    // 4. 알림 설정 토글
     @PatchMapping("/me/alarm")
     public ResponseEntity<Boolean> toggleAlarm(
             @RequestBody Map<String, Boolean> body,
@@ -52,7 +62,7 @@ public class MemberController {
         return ResponseEntity.ok(updatedStatus);
     }
 
-    // 4. 로그아웃
+    // 5. 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -62,7 +72,7 @@ public class MemberController {
         return ResponseEntity.ok("로그아웃되었습니다.");
     }
 
-    // 5. 분반 탈퇴
+    // 6. 분반 탈퇴
     @DeleteMapping("/me/room")
     public ResponseEntity<String> leaveRoom(@AuthenticationPrincipal OAuth2User principal) {
         String email = principal.getAttribute("email");
