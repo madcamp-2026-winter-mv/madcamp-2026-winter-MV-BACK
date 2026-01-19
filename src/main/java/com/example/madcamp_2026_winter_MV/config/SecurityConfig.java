@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/api/auth/me",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "http://10.249.78.39:3000"
                         ).permitAll()
                         // 2. 그 외의 상세 페이지나 글쓰기 등은 로그인이 필요함
                         .anyRequest().authenticated()
