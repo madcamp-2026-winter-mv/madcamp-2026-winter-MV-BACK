@@ -103,9 +103,9 @@ public class PartyService {
     }
 
 
-    // 4. 팟 멤버 추가 (비었을 때 추가 영입)
+    // 4. 팟 멤버 추가
     @Transactional
-    public void addMemberToParty(Long chatRoomId, Long newMemberId, String ownerEmail) {
+    public String addMemberToParty(Long chatRoomId, Long newMemberId, String ownerEmail) {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
         Post post = postRepository.findById(room.getPostId()).orElseThrow();
         Member owner = memberRepository.findByEmail(ownerEmail).orElseThrow();
@@ -126,11 +126,13 @@ public class PartyService {
 
         // 게시글의 현재 인원수 업데이트
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
+
+        return newMember.getNickname();
     }
 
     //  5. 팟 멤버 내보내기
     @Transactional
-    public void leaveParty(Long chatRoomId, Long targetMemberId, String requestUserEmail) {
+    public String leaveParty(Long chatRoomId, Long targetMemberId, String requestUserEmail) {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
         Member target = memberRepository.findById(targetMemberId).orElseThrow();
         Member requestUser = memberRepository.findByEmail(requestUserEmail).orElseThrow();
@@ -151,6 +153,8 @@ public class PartyService {
         if (post.getCurrentParticipants() < post.getMaxParticipants()) {
             post.setClosed(false); // 빈자리가 생겼으므로 다시 모집 중 상태로
         }
+
+        return target.getNickname();
     }
 
     private void saveChatMember(ChatRoom room, Member member) {
@@ -163,7 +167,6 @@ public class PartyService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // ChatMemberRepository에 정의한 findByMember(member)를 호출합니다.
         return chatMemberRepository.findByMember(member).stream()
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
