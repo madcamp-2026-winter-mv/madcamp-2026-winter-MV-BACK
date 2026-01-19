@@ -45,7 +45,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .defaultSuccessUrl("http://localhost:3000/", true)
+                        .defaultSuccessUrl("https://madcamp-2026-winter-mv-front.vercel.app/", true)
                 );
 
         return http.build();
@@ -59,7 +59,8 @@ public class SecurityConfig {
                 "https://madcamp-view.com",
                 "http://madcamp-view.com",
                 "http://localhost:3000",
-                "http://localhost:8080"
+                "http://localhost:8080",
+                "https://madcamp-2026-winter-mv-front.vercel.app"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
