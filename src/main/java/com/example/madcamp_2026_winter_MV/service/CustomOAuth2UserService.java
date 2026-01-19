@@ -35,7 +35,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
         String email = (String) attributes.get("email");
-        String name = (String) attributes.get("name"); // 구글 프로필 실명
+        String name = (String) attributes.get("name");
         String picture = (String) attributes.get("picture");
 
         Member member = saveOrUpdate(email, name, picture);
@@ -48,15 +48,18 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     }
 
     private Member saveOrUpdate(String email, String name, String picture) {
+        String parsedName = (name != null && name.contains("("))
+                ? name.split("\\(")[0].trim()
+                : name;
+
         Member member = memberRepository.findByEmail(email)
                 .map(entity -> {
-                    // 기존 회원이면 실명(realName)과 프로필 이미지를 업데이트
-                    entity.setRealName(name);
+                    entity.setRealName(parsedName);
                     entity.setProfileImage(picture);
                     return entity;
                 })
                 .orElseGet(() -> {
-                    // 신규 회원이면 중복되지 않는 랜덤 닉네임 생성
+                    // 신규 회원이면 랜덤 닉네임 생성
                     String randomNickname;
                     do {
                         randomNickname = "몰입하는 " + (int)(Math.random() * 9000 + 1000);
@@ -64,7 +67,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
                     return Member.builder()
                             .email(email)
-                            .realName(name) // 구글 실명 저장
+                            .realName(parsedName)
                             .nickname(randomNickname)
                             .profileImage(picture)
                             .role(Role.USER)

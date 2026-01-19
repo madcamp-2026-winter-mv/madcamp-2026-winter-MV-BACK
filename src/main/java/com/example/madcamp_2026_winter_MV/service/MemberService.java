@@ -38,6 +38,7 @@ public class MemberService {
                 .nickname(member.getNickname())
                 .realName(member.getRealName())
                 .email(member.getEmail())
+                .roomId(member.getRoom() != null ? member.getRoom().getRoomId() : null)
                 .roomName(member.getRoom() != null ? member.getRoom().getName() : "소속 없음")
                 .role(member.getRole().name())
                 .presentationCount(member.getPresentationCount())
