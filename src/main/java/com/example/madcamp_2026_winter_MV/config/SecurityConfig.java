@@ -45,7 +45,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .defaultSuccessUrl("https://madcamp-2026-winter-mv-front.vercel.app/", true)
+                        .defaultSuccessUrl("https://madcamp-view.com/dashboard", true)
                 );
 
         return http.build();
