@@ -74,7 +74,7 @@ jobs:
               -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
               -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               -e AWS_REGION="${{ secrets.AWS_REGION }}" \
-              -e SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI="https://madcamp-view.com/login/oauth2/code/google" \
+              -e SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI="https://api.madcamp-view.com/login/oauth2/code/google" \
               ${{ env.ECR_REPOSITORY_URL }}:latest
             
             # 5. 사용하지 않는 모든 이미지 정리
