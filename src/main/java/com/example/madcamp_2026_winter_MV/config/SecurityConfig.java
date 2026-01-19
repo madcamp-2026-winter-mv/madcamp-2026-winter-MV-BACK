@@ -39,9 +39,11 @@ public class SecurityConfig {
                                 "/login/**",
                                 "/oauth2/**",
                                 "/api/auth/me",
+                                "/api/home/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
+                                "https://www.madcamp-view.com",
                                 "http://10.249.78.39:3000"
                         ).permitAll()
                         // 2. 그 외의 상세 페이지나 글쓰기 등은 로그인이 필요함
@@ -61,6 +63,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://madcamp-view.com",
+                "https://www.madcamp-view.com",
                 "http://madcamp-view.com",
                 "http://localhost:3000",
                 "http://localhost:8080",
