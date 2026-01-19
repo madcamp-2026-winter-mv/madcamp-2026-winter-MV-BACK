@@ -13,6 +13,7 @@ public class MemberResponseDto {
     private String realName;
     private String email;
     private String roomName;
+    private Long roomId;
     private String role; // OWNER, ADMIN, MEMBER
 
     private int presentationCount;    // 발표 횟수
@@ -30,6 +31,7 @@ public class MemberResponseDto {
                 .nickname(member.getNickname())
                 .realName(member.getRealName())
                 .email(member.getEmail())
+                .roomId(member.getRoom() != null ? member.getRoom().getRoomId() : null)
                 .roomName(member.getRoom() != null ? member.getRoom().getName() : null)
                 .role(member.getRole() != null ? member.getRole().name() : "USER")
                 .presentationCount(member.getPresentationCount())
