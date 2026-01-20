@@ -283,6 +283,7 @@ public class PartyService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         return chatMemberRepository.findByMemberWithChatRoom(member).stream()
+                .sorted((a, b) -> b.getChatRoom().getCreatedAt().compareTo(a.getChatRoom().getCreatedAt()))
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
                     String postTitle = postRepository.findById(room.getPostId())
