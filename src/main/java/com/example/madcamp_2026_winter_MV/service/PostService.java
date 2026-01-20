@@ -109,20 +109,40 @@ public class PostService {
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> PostResponseDto.CommentResponseDto.builder()
                         .commentId(comment.getCommentId())
-                        .memberId(comment.getMember().getMemberId()) // 추가됨
+                        .memberId(comment.getMember().getMemberId())
                         .content(comment.getContent())
                         .authorNickname(comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음")
                         .createdAt(comment.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 
+        String authorNickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
+                .nickname(authorNickname)
+                .isAnonymous(post.isAnonymous())
+                .imageUrl(null)
+                .build();
+
+        PostResponseDto.PartyInfoDto partyInfoDto = null;
+        if (post.getType() == PostType.PARTY) {
+            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
+                    .currentCount(post.getCurrentParticipants())
+                    .maxCount(post.getMaxParticipants())
+                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
+                    .build();
+        }
+
         return PostResponseDto.builder()
                 .postId(post.getPostId()).title(post.getTitle()).content(post.getContent()).type(post.getType())
-                .authorNickname(post.getMember().getNickname()).createdAt(post.getCreatedAt())
+                .authorNickname(authorNickname).createdAt(post.getCreatedAt())
                 .isVoted(isVoted).isLiked(isLiked).likeCount(post.getLikes().size())
                 .voteOptions(voteOptions).currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants()).comments(comments)
                 .isAuthor(post.getMember().getEmail().equals(email))
+                .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
+                .timeAgo(formatTimeAgo(post.getCreatedAt()))
+                .author(authorDto)
+                .partyInfo(partyInfoDto)
                 .build();
     }
 
@@ -139,10 +159,25 @@ public class PostService {
     }
 
     private PostResponseDto convertToDto(Post post) {
-        // [변경] 목록 노출 시 내용 요약 (제목 + 내용 조금)
         String contentSummary = post.getContent();
         if (contentSummary != null && contentSummary.length() > 50) {
             contentSummary = contentSummary.substring(0, 50) + "...";
+        }
+
+        String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
+                .nickname(nickname)
+                .isAnonymous(post.isAnonymous())
+                .imageUrl(null)
+                .build();
+
+        PostResponseDto.PartyInfoDto partyInfoDto = null;
+        if (post.getType() == PostType.PARTY) {
+            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
+                    .currentCount(post.getCurrentParticipants())
+                    .maxCount(post.getMaxParticipants())
+                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
+                    .build();
         }
 
         return PostResponseDto.builder()
@@ -150,11 +185,15 @@ public class PostService {
                 .title(post.getTitle())
                 .content(contentSummary)
                 .type(post.getType())
-                .authorNickname(post.getMember().getNickname())
+                .authorNickname(nickname)
                 .createdAt(post.getCreatedAt())
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
                 .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
+                .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
+                .timeAgo(formatTimeAgo(post.getCreatedAt()))
+                .author(authorDto)
+                .partyInfo(partyInfoDto)
                 .build();
     }
 
