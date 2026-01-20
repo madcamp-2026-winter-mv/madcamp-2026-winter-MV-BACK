@@ -38,6 +38,7 @@ public class MemberService {
         }
 
         return MemberResponseDto.builder()
+                .memberId(member.getMemberId())
                 .nickname(member.getNickname())
                 .realName(member.getRealName())
                 .email(member.getEmail())

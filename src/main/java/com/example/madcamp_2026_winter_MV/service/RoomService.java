@@ -65,9 +65,11 @@ public class RoomService {
 
         return room.getMembers().stream()
                 .map(member -> MemberResponseDto.builder()
+                        .memberId(member.getMemberId())
                         .realName(member.getRealName()) // 실명 포함
                         .nickname(member.getNickname())
                         .email(member.getEmail())
+                        .role(member.getRole() != null ? member.getRole().name() : "USER")
                         .attendanceRate(room.getTotalSessionCount() == 0 ? 0 :
                                 (double) member.getAttendanceCount() / room.getTotalSessionCount() * 100)
                         .presentationCount(member.getPresentationCount())

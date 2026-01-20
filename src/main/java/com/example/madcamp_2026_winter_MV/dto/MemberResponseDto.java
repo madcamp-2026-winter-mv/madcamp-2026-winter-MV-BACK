@@ -9,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MemberResponseDto {
+    private Long memberId;
     private String nickname;
     private String realName;
     private String email;
@@ -29,6 +30,7 @@ public class MemberResponseDto {
         if (member == null) return null;
 
         return MemberResponseDto.builder()
+                .memberId(member.getMemberId())
                 .nickname(member.getNickname())
                 .realName(member.getRealName())
                 .email(member.getEmail())
