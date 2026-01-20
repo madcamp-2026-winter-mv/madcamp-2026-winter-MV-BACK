@@ -1,6 +1,8 @@
 package com.example.madcamp_2026_winter_MV.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -15,9 +17,13 @@ public class Schedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long scheduleId;
 
+    @Getter(AccessLevel.NONE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
+
+    @JsonIgnore
+    public Room getRoom() { return room; }
 
     @Column(nullable = false)
     private String title;
