@@ -17,11 +17,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-stomp")
-                .setAllowedOrigins(
-                        "http://localhost:3000",
-                        "https://madcamp-view.com",
-                        "http://madcamp-view.com"
-                ) // 프론트엔드 주소
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 }
