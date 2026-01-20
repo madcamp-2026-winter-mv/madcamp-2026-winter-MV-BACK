@@ -52,6 +52,8 @@ public class PostResponseDto {
     private Long chatRoomId;
     /** 팟 모집 완료 시, 현재 사용자가 그 채팅방 참가자인지. */
     private boolean isChatParticipant;
+    /** 팟 모집 완료 시, 채팅방 참가자 중 글쓴이를 제외한 멤버(닉네임·프로필). 모두에게 노출. */
+    private List<ChatParticipantDto> chatParticipants;
 
     @Getter @Builder
     @NoArgsConstructor @AllArgsConstructor
@@ -87,5 +89,12 @@ public class PostResponseDto {
         private int currentCount;
         private int maxCount;
         private boolean isRecruiting;
+    }
+
+    @Getter @Builder
+    @NoArgsConstructor @AllArgsConstructor
+    public static class ChatParticipantDto {
+        private String nickname;
+        private String imageUrl;
     }
 }

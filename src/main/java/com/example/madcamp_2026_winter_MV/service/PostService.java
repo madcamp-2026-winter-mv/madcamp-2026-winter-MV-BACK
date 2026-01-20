@@ -159,6 +159,7 @@ public class PostService {
         PostResponseDto.PartyInfoDto partyInfoDto = null;
         Long chatRoomId = null;
         boolean isChatParticipant = false;
+        List<PostResponseDto.ChatParticipantDto> chatParticipants = List.of();
         if (post.getType() == PostType.PARTY) {
             int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
             partyInfoDto = PostResponseDto.PartyInfoDto.builder()
@@ -168,8 +169,17 @@ public class PostService {
                     .build();
             var chatRoomOpt = chatRoomRepository.findByPostId(postId);
             if (chatRoomOpt.isPresent()) {
-                chatRoomId = chatRoomOpt.get().getChatRoomId();
-                isChatParticipant = chatMemberRepository.existsByChatRoomAndMember(chatRoomOpt.get(), member);
+                var room = chatRoomOpt.get();
+                chatRoomId = room.getChatRoomId();
+                isChatParticipant = chatMemberRepository.existsByChatRoomAndMember(room, member);
+                Long authorMemberId = post.getMember() != null ? post.getMember().getMemberId() : null;
+                chatParticipants = chatMemberRepository.findByChatRoom(room).stream()
+                        .filter(cm -> cm.getMember() != null && (authorMemberId == null || !cm.getMember().getMemberId().equals(authorMemberId)))
+                        .map(cm -> PostResponseDto.ChatParticipantDto.builder()
+                                .nickname(cm.getMember().getNickname())
+                                .imageUrl(cm.getMember().getProfileImage())
+                                .build())
+                        .collect(Collectors.toList());
             }
         }
 
@@ -188,6 +198,7 @@ public class PostService {
                 .tempParticipantIds(tempParticipantIds)
                 .chatRoomId(chatRoomId)
                 .isChatParticipant(isChatParticipant)
+                .chatParticipants(chatParticipants)
                 .build();
     }
 

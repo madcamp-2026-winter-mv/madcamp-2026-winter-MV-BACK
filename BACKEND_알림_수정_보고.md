@@ -128,4 +128,9 @@
 ### 7.6 `PostService`
 - **의존성**: `ChatMemberRepository` 추가
 - **`getPostDetail`**: `post.type == PARTY` 일 때 `chatRoomRepository.findByPostId` 로 채팅방 조회 후  
-  `chatRoomId` 설정, `chatMemberRepository.existsByChatRoomAndMember(room, member)` 로 `isChatParticipant` 설정
+  `chatRoomId` 설정, `chatMemberRepository.existsByChatRoomAndMember(room, member)` 로 `isChatParticipant` 설정,  
+  `chatMemberRepository.findByChatRoom(room)` 로 글쓴이를 제외한 `chatParticipants`(닉네임·imageUrl) 설정
+
+### 7.7 `PostResponseDto` (추가)
+- **`ChatParticipantDto`**: `nickname`, `imageUrl`
+- **`chatParticipants`**: 모집 완료 시 채팅방 멤버 중 글쓴이 제외. 참가자 카드에서 모두에게 노출
