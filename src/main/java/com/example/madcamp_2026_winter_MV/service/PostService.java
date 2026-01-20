@@ -114,11 +114,12 @@ public class PostService {
                         .build())
                 .collect(Collectors.toList());
 
-        // 댓글 목록 빌드. 익명이면 분반(roomId) 미노출.
+        // 댓글 목록 빌드. 익명이면 분반(roomId)·프로필 미노출.
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> {
                     Long cRoomId = (comment.isAnonymous() || comment.getMember() == null || comment.getMember().getRoom() == null)
                             ? null : comment.getMember().getRoom().getRoomId();
+                    String cImg = comment.isAnonymous() || comment.getMember() == null ? null : comment.getMember().getProfileImage();
                     return PostResponseDto.CommentResponseDto.builder()
                             .commentId(comment.getCommentId())
                             .memberId(comment.getMember().getMemberId())
@@ -127,17 +128,19 @@ public class PostService {
                             .createdAt(comment.getCreatedAt())
                             .isAnonymous(comment.isAnonymous())
                             .roomId(cRoomId)
+                            .imageUrl(cImg)
                             .build();
                 })
                 .collect(Collectors.toList());
 
-        // 익명이면 분반(roomId) 미노출. DTO에는 작성자(member)가 있으나 isAnonymous이면 외부에 익명 노출.
+        // 익명이면 분반(roomId)·프로필 미노출. DTO에는 작성자(member)가 있으나 isAnonymous이면 외부에 익명 노출.
         Long authorRoomId = post.isAnonymous() ? null : (post.getMember() == null || post.getMember().getRoom() == null ? null : post.getMember().getRoom().getRoomId());
         String authorNickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        String authorImg = post.isAnonymous() || post.getMember() == null ? null : post.getMember().getProfileImage();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(authorNickname)
                 .isAnonymous(post.isAnonymous())
-                .imageUrl(null)
+                .imageUrl(authorImg)
                 .roomId(authorRoomId)
                 .build();
 
@@ -197,10 +200,11 @@ public class PostService {
 
         String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
         Long aRoomId = post.isAnonymous() ? null : (post.getMember() == null || post.getMember().getRoom() == null ? null : post.getMember().getRoom().getRoomId());
+        String aImg = post.isAnonymous() || post.getMember() == null ? null : post.getMember().getProfileImage();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(nickname)
                 .isAnonymous(post.isAnonymous())
-                .imageUrl(null)
+                .imageUrl(aImg)
                 .roomId(aRoomId)
                 .build();
 
@@ -320,13 +324,14 @@ public class PostService {
     private PostResponseDto convertToFrontendDto(Post post) {
         String timeAgo = formatTimeAgo(post.getCreatedAt());
 
-        // 작성자 객체 생성. 익명이면 분반 미노출.
+        // 작성자 객체 생성. 익명이면 분반·프로필 미노출.
         String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
         Long aRoomId = post.isAnonymous() ? null : (post.getMember() == null || post.getMember().getRoom() == null ? null : post.getMember().getRoom().getRoomId());
+        String aImg = post.isAnonymous() || post.getMember() == null ? null : post.getMember().getProfileImage();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(nickname)
                 .isAnonymous(post.isAnonymous())
-                .imageUrl(null)
+                .imageUrl(aImg)
                 .roomId(aRoomId)
                 .build();
 

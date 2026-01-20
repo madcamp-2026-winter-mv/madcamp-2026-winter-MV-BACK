@@ -30,6 +30,8 @@ public class CommentController {
 
         Comment comment = commentService.createComment(postId, content, email, anonymous);
 
+        Long cRoomId = (comment.isAnonymous() || comment.getMember().getRoom() == null) ? null : comment.getMember().getRoom().getRoomId();
+        String cImg = comment.isAnonymous() || comment.getMember() == null ? null : comment.getMember().getProfileImage();
         PostResponseDto.CommentResponseDto response = PostResponseDto.CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
                 .memberId(comment.getMember().getMemberId())
@@ -37,6 +39,8 @@ public class CommentController {
                 .authorNickname(comment.isAnonymous() ? "익명" : comment.getMember().getNickname())
                 .createdAt(comment.getCreatedAt())
                 .isAnonymous(comment.isAnonymous())
+                .roomId(cRoomId)
+                .imageUrl(cImg)
                 .build();
 
         return ResponseEntity.ok(response);

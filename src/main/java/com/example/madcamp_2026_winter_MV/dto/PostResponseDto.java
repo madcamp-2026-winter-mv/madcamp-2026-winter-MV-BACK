@@ -56,6 +56,8 @@ public class PostResponseDto {
         private boolean isAnonymous;
         /** 댓글 작성자 분반 ID (익명이면 null, 표시 시 "{roomId} 분반") */
         private Long roomId;
+        /** 댓글 작성자 프로필 이미지 (익명이면 null) */
+        private String imageUrl;
     }
 
     @Getter @Builder
