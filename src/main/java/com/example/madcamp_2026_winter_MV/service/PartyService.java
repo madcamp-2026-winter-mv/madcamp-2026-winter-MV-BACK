@@ -235,7 +235,7 @@ public class PartyService {
         }
     }
 
-    // 7. 채팅방 읽음 시간 업데이트
+    // 6. 채팅방 읽음 시간 업데이트
     @Transactional
     public void updateLastReadTime(Long chatRoomId, String email) {
         Member member = memberRepository.findByEmail(email).orElseThrow();
@@ -245,7 +245,7 @@ public class PartyService {
         chatMember.setLastReadAt(LocalDateTime.now());
     }
 
-    // 6. 내가 참여 중인 모든 채팅방 목록 조회 (미읽음 카운트 로직 추가)
+    // 7. 내가 참여 중인 모든 채팅방 목록 조회 (미읽음 카운트 로직 추가)
     public List<ChatRoomResponseDto> getMyChatRooms(String email) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -274,5 +274,30 @@ public class PartyService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+    // 8. 채팅방 삭제 (방장 전용) - 게시글 상태 변경 없음
+    @Transactional
+    public void deleteChatRoom(Long chatRoomId, String email) {
+        // 1. 채팅방 조회
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+        // 2. 연관된 게시글 조회 (권한 확인용)
+        Post post = postRepository.findById(room.getPostId())
+                .orElseThrow(() -> new IllegalArgumentException("연관된 게시글을 찾을 수 없습니다."));
+
+        // 3. 사용자 확인
+        Member requester = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 4. 방장 권한 체크
+        if (!post.getMember().getMemberId().equals(requester.getMemberId())) {
+            throw new IllegalStateException("방장만 채팅방을 삭제할 수 있습니다.");
+        }
+
+        // 5. 채팅방 삭제 (연관된 ChatMember, ChatMessage는 Cascade에 의해 자동 삭제)
+        chatRoomRepository.delete(room);
+
+        log.info("[채팅방삭제] 방장({})이 채팅방(ID: {})을 삭제했습니다. 게시글 상태는 유지됩니다.", email, chatRoomId);
     }
 }

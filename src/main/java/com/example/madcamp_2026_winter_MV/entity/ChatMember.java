@@ -1,5 +1,6 @@
 package com.example.madcamp_2026_winter_MV.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +16,7 @@ public class ChatMember {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id")
+    @JsonIgnore
     private ChatRoom chatRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)

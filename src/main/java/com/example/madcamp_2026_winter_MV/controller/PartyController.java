@@ -125,4 +125,18 @@ public class PartyController {
 
         return ResponseEntity.ok().build();
     }
+
+    // 채팅방 삭제 (방장 전용)
+    @DeleteMapping("/rooms/{chatRoomId}")
+    public ResponseEntity<Void> deleteChatRoom(
+            @PathVariable Long chatRoomId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        if (principal == null) return ResponseEntity.status(401).build();
+
+        String email = principal.getAttribute("email");
+        partyService.deleteChatRoom(chatRoomId, email);
+
+        return ResponseEntity.noContent().build();
+    }
 }
