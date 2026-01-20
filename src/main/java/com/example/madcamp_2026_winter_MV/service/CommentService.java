@@ -6,6 +6,7 @@ import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.repository.CommentRepository;
 import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
 import com.example.madcamp_2026_winter_MV.repository.PostRepository;
+import com.example.madcamp_2026_winter_MV.repository.PostTempParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final PostTempParticipantRepository postTempParticipantRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -82,6 +84,12 @@ public class CommentService {
         if (!comment.getMember().getEmail().equals(email)) {
             throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
         }
+
+        // 팟 모집 참가자로 선택된 댓글 작성자면 임시 참가자 목록에서 제거
+        Long postId = comment.getPost().getPostId();
+        Long memberId = comment.getMember().getMemberId();
+        postTempParticipantRepository.findByPost_PostIdAndMember_MemberId(postId, memberId)
+                .ifPresent(postTempParticipantRepository::delete);
 
         commentRepository.delete(comment);
     }
