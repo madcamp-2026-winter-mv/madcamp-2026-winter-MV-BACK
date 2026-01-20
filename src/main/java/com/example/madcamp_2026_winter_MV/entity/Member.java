@@ -2,6 +2,8 @@ package com.example.madcamp_2026_winter_MV.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +19,8 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_id")
     private Long memberId;
+
+    private LocalDateTime lastAttendanceTime;
 
     @Column(nullable = false, unique = true)
     private String email;

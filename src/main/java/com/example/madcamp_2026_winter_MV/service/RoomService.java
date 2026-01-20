@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -147,13 +148,22 @@ public class RoomService {
         Room room = member.getRoom();
         if (room == null) throw new IllegalStateException("소속된 분반이 없습니다.");
 
+        // 1. 출석 가능 시간 및 활성화 여부 체크 (기존 로직)
         if (!room.isAttendanceActive() || room.getAttendanceEndTime() == null ||
                 LocalDateTime.now().isAfter(room.getAttendanceEndTime())) {
             room.stopAttendance();
             throw new IllegalStateException("출석 가능 시간이 아닙니다.");
         }
 
+        // 2. 중복 출석 체크 로직 추가
+        if (member.getLastAttendanceTime() != null &&
+                member.getLastAttendanceTime().toLocalDate().equals(LocalDate.now())) {
+            throw new IllegalStateException("이미 출석 처리가 완료되었습니다.");
+        }
+
+        // 3. 출석 처리 및 시간 기록
         member.setAttendanceCount(member.getAttendanceCount() + 1);
+        member.setLastAttendanceTime(LocalDateTime.now()); // 현재 시각 기록
     }
 
     @Transactional
