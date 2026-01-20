@@ -86,10 +86,14 @@ public class CommentService {
         }
 
         // 팟 모집 참가자로 선택된 댓글 작성자면 임시 참가자 목록에서 제거
-        Long postId = comment.getPost().getPostId();
-        Long memberId = comment.getMember().getMemberId();
-        postTempParticipantRepository.findByPost_PostIdAndMember_MemberId(postId, memberId)
-                .ifPresent(postTempParticipantRepository::delete);
+        // 단, 모집 완료(isClosed)된 글에서는 임시 참가자를 건드리지 않음 (모집 완료 상태 유지)
+        Post post = comment.getPost();
+        if (!post.isClosed()) {
+            Long postId = post.getPostId();
+            Long memberId = comment.getMember().getMemberId();
+            postTempParticipantRepository.findByPost_PostIdAndMember_MemberId(postId, memberId)
+                    .ifPresent(postTempParticipantRepository::delete);
+        }
 
         commentRepository.delete(comment);
     }

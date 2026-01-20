@@ -73,6 +73,7 @@ public class PartyService {
                     .postId(postId)
                     .createdAt(LocalDateTime.now())
                     .build();
+            chatRoom.setOwnerMemberId(owner.getMemberId());
 
             ChatRoom savedRoom = chatRoomRepository.saveAndFlush(chatRoom);
             log.info("[채팅방개설] ChatRoom 저장 완료 ID={}", savedRoom.getChatRoomId());
@@ -216,7 +217,10 @@ public class PartyService {
     @Transactional
     public String addMemberToParty(Long chatRoomId, Long newMemberId, String ownerEmail) {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
-        Post post = postRepository.findById(room.getPostId()).orElseThrow();
+        Post post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null;
+        if (post == null) {
+            throw new IllegalStateException("연결된 게시글이 삭제되어 멤버를 추가할 수 없습니다.");
+        }
         Member owner = memberRepository.findByEmail(ownerEmail).orElseThrow();
 
         if (!post.getMember().getMemberId().equals(owner.getMemberId())) {
@@ -251,9 +255,10 @@ public class PartyService {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
         Member target = memberRepository.findById(targetMemberId).orElseThrow();
         Member requestUser = memberRepository.findByEmail(requestUserEmail).orElseThrow();
-        Post post = postRepository.findById(room.getPostId()).orElseThrow();
+        Post post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null;
 
-        boolean isOwner = post.getMember().getMemberId().equals(requestUser.getMemberId());
+        boolean isOwner = (post != null && post.getMember() != null && post.getMember().getMemberId().equals(requestUser.getMemberId()))
+                || (room.getOwnerMemberId() != null && room.getOwnerMemberId().equals(requestUser.getMemberId()));
         boolean isSelf = target.getMemberId().equals(requestUser.getMemberId());
 
         if (!isOwner && !isSelf) {
@@ -264,7 +269,9 @@ public class PartyService {
 
         chatMemberRepository.deleteByChatRoomAndMember(room, target);
 
-        post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
+        if (post != null) {
+            post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
+        }
         // 채팅방이 한 번 생성된 글은 모집 완료 상태 유지. 인원 감소해도 다시 모집중으로 되돌리지 않음.
 
         return new LeaveOrKickResult(target.getNickname(), kicked);
@@ -308,10 +315,15 @@ public class PartyService {
                 .sorted((a, b) -> b.getChatRoom().getCreatedAt().compareTo(a.getChatRoom().getCreatedAt()))
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
-                    Post post = postRepository.findById(room.getPostId()).orElse(null);
-                    String postTitle = post != null ? post.getTitle() : ("게시글 #" + room.getPostId());
-                    String creatorProfileImageUrl = (post != null && post.getMember() != null && post.getMember().getProfileImage() != null && !post.getMember().getProfileImage().isEmpty())
-                            ? post.getMember().getProfileImage() : null;
+                    Post post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null;
+                    String postTitle = post != null ? post.getTitle() : room.getRoomName();
+                    String creatorProfileImageUrl = null;
+                    if (post != null && post.getMember() != null && post.getMember().getProfileImage() != null && !post.getMember().getProfileImage().isEmpty()) {
+                        creatorProfileImageUrl = post.getMember().getProfileImage();
+                    } else if (room.getOwnerMemberId() != null) {
+                        creatorProfileImageUrl = memberRepository.findById(room.getOwnerMemberId())
+                                .map(Member::getProfileImage).filter(img -> img != null && !img.isEmpty()).orElse(null);
+                    }
 
                     int participantCount = (int) chatMemberRepository.countByChatRoom(room);
 
@@ -343,9 +355,8 @@ public class PartyService {
             throw new IllegalStateException("참여 중인 채팅방만 멤버 목록을 조회할 수 있습니다.");
         }
 
-        Post post = postRepository.findById(room.getPostId())
-                .orElseThrow(() -> new IllegalArgumentException("연관된 게시글을 찾을 수 없습니다."));
-        Long ownerMemberId = post.getMember() != null ? post.getMember().getMemberId() : null;
+        Post post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null;
+        Long ownerMemberId = (post != null && post.getMember() != null) ? post.getMember().getMemberId() : room.getOwnerMemberId();
 
         return chatMemberRepository.findByChatRoom(room).stream()
                 .filter(cm -> cm.getMember() != null)
@@ -369,16 +380,17 @@ public class PartyService {
         ChatRoom room = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
 
-        // 2. 연관된 게시글 조회 (권한 확인용)
-        Post post = postRepository.findById(room.getPostId())
-                .orElseThrow(() -> new IllegalArgumentException("연관된 게시글을 찾을 수 없습니다."));
+        // 2. 연관된 게시글 또는 ownerMemberId로 방장 확인
+        Post post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null;
 
         // 3. 사용자 확인
         Member requester = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 4. 방장 권한 체크
-        if (!post.getMember().getMemberId().equals(requester.getMemberId())) {
+        // 4. 방장 권한 체크 (글 삭제로 post가 없어도 ownerMemberId로 판별)
+        boolean isOwner = (post != null && post.getMember() != null && post.getMember().getMemberId().equals(requester.getMemberId()))
+                || (room.getOwnerMemberId() != null && room.getOwnerMemberId().equals(requester.getMemberId()));
+        if (!isOwner) {
             throw new IllegalStateException("방장만 채팅방을 삭제할 수 있습니다.");
         }
 

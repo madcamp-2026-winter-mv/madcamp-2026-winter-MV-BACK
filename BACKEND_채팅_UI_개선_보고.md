@@ -90,12 +90,39 @@
 
 ## 6. [추가] 채팅방-게시글 오류 수정
 
-### 6.1 모집 완료 글 삭제 가능 (`PostService.deletePost`)
+### 6.1 모집 완료 글 삭제 가능 (`PostService.deletePost`) — (6.4에서 변경됨, 채팅방 유지로 수정)
 - **문제**: 모집 완료 후 생성된 `ChatRoom`이 `post_id`(UNIQUE)로 `Post`를 참조해, 글 삭제 시 "데이터 중복 또는 제약 조건 위반" 발생.
-- **수정**: `deletePost`에서 `postRepository.delete(post)` **전에** `chatRoomRepository.findByPostId(postId).ifPresent(chatRoomRepository::delete)` 호출.
-- `ChatRoom` 삭제 시 `ChatMember`, `ChatMessage`는 `cascade=ALL`로 함께 삭제됨.
+- **수정(최종)**: `deletePost`에서 `ChatRoom`을 삭제하지 않고, `findByPostId(postId).ifPresent(room -> { room.setPostId(null); chatRoomRepository.save(room); })` 로 **연관만 끊음**. 이후 `postRepository.delete(post)`.
+- 채팅방·채팅 내역은 그대로 유지. `post_id`가 null이 된 `ChatRoom`은 `ownerMemberId`로 방장 판별.
 
 ### 6.2 탈퇴/강퇴 시 모집완료 유지 (`PartyService.leaveParty`)
 - **문제**: 채팅방에서 멤버 탈퇴/강퇴 시 `currentParticipants < maxParticipants`인 경우 `post.setClosed(false)`로 돌려, 모집완료 글이 다시 "모집중"으로 바뀜.
 - **수정**: `if (post.getCurrentParticipants() < post.getMaxParticipants()) { post.setClosed(false); }` 블록 **제거**.
 - 채팅방이 한 번 생성된 글은 인원이 줄어도 **모집 완료 상태 유지**. 같은 글로 채팅방이 다시 생성되지는 않음 (`existsByPostId` 체크 유지).
+
+### 6.3 댓글 삭제 시 모집완료 유지 (`CommentService.deleteComment`)
+- **문제**: 모집 완료된 글에서 댓글 삭제 시, 임시 참가자(PostTempParticipant) 제거 등으로 글이 다시 "모집중"으로 바뀌는 현상.
+- **수정**: `post.isClosed()`인 경우 **PostTempParticipant를 건드리지 않음**. `if (!post.isClosed()) { ... postTempParticipantRepository.findByPost_PostIdAndMember_MemberId(...).ifPresent(delete); }` 이후에만 `commentRepository.delete(comment)`.
+
+### 6.4 글 삭제 시 채팅방 유지·연관 끊기
+
+#### `ChatRoom` 엔티티
+- **추가 필드**: `ownerMemberId` (Long, nullable). 채팅방 생성 시 글쓴이(방장) `memberId` 저장. 게시글 삭제 후에도 방장 판별용.
+
+#### `PartyService.confirmAndCreateChat`
+- `ChatRoom` 생성 후 `chatRoom.setOwnerMemberId(owner.getMemberId())` 설정 후 저장.
+
+#### `PostService.deletePost`
+- `chatRoomRepository.findByPostId(postId).ifPresent(room -> { room.setPostId(null); chatRoomRepository.save(room); });` — 채팅방 삭제 없이 `post_id`만 null.
+- 이어서 `postRepository.delete(post)`.
+
+#### `PartyService` — `postId == null` 대응
+- **getMyChatRooms**: `post = room.getPostId() != null ? postRepository.findById(room.getPostId()).orElse(null) : null`. `postTitle = post != null ? post.getTitle() : room.getRoomName()`. `creatorProfileImageUrl`은 `post`가 없으면 `ownerMemberId`로 `Member` 조회 후 프로필 사용.
+- **addMemberToParty**: `post == null`이면 `"연결된 게시글이 삭제되어 멤버를 추가할 수 없습니다."` 예외.
+- **leaveParty**: `isOwner`는 `(post != null && post.getMember().getMemberId().equals(...)) || (room.getOwnerMemberId() != null && room.getOwnerMemberId().equals(...))`. `post.setCurrentParticipants`는 `post != null`일 때만.
+- **getChatRoomMembers**: `ownerMemberId = (post != null && post.getMember() != null) ? post.getMember().getMemberId() : room.getOwnerMemberId()`.
+- **deleteChatRoom**: 방장 체크를 `post.getMember()` 또는 `room.getOwnerMemberId()`로 수행.
+
+#### DB 마이그레이션
+- `chat_room` 테이블에 `owner_member_id` (BIGINT, nullable) 컬럼 추가.
+- 기존 `post_id`가 NOT NULL이었다면, 글 삭제 후 채팅방 유지를 위해 nullable로 변경 필요. (이미 nullable이면 생략)
