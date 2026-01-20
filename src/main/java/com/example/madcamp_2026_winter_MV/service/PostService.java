@@ -141,28 +141,31 @@ public class PostService {
                 .roomId(authorRoomId)
                 .build();
 
-        PostResponseDto.PartyInfoDto partyInfoDto = null;
-        if (post.getType() == PostType.PARTY) {
-            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
-                    .currentCount(post.getCurrentParticipants())
-                    .maxCount(post.getMaxParticipants())
-                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
-                    .build();
-        }
-
-        // 팟 작성자일 때만 임시 참가자 목록 반환
+        // 팟: 임시 참가자 목록을 모든 방문자에게 제공(본인 댓글 선택 여부·참가 명단용). 모집중이면 currentCount = 1 + 임시 참가자.
         List<Long> tempParticipantIds = null;
-        if (post.getType() == PostType.PARTY && post.getMember().getEmail().equals(email)) {
+        int displayCurrent = post.getCurrentParticipants();
+        if (post.getType() == PostType.PARTY) {
             tempParticipantIds = postTempParticipantRepository.findByPost_PostId(postId).stream()
                     .map(pp -> pp.getMember().getMemberId())
                     .collect(Collectors.toList());
+            displayCurrent = post.isClosed() ? post.getCurrentParticipants() : (1 + tempParticipantIds.size());
+        }
+
+        PostResponseDto.PartyInfoDto partyInfoDto = null;
+        if (post.getType() == PostType.PARTY) {
+            int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
+            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
+                    .currentCount(displayCurrent)
+                    .maxCount(max)
+                    .isRecruiting(!post.isClosed() && displayCurrent < max)
+                    .build();
         }
 
         return PostResponseDto.builder()
                 .postId(post.getPostId()).title(post.getTitle()).content(post.getContent()).type(post.getType())
                 .authorNickname(authorNickname).createdAt(post.getCreatedAt())
                 .isVoted(isVoted).isLiked(isLiked).likeCount(post.getLikes().size())
-                .voteOptions(voteOptions).currentParticipants(post.getCurrentParticipants())
+                .voteOptions(voteOptions).currentParticipants(displayCurrent)
                 .maxParticipants(post.getMaxParticipants()).comments(comments)
                 .isAuthor(post.getMember().getEmail().equals(email))
                 .commentCount(post.getComments() != null ? post.getComments().size() : 0)
@@ -202,11 +205,15 @@ public class PostService {
                 .build();
 
         PostResponseDto.PartyInfoDto partyInfoDto = null;
+        int displayCurrent = post.getCurrentParticipants();
         if (post.getType() == PostType.PARTY) {
+            int tempSize = postTempParticipantRepository.findByPost_PostId(post.getPostId()).size();
+            displayCurrent = post.isClosed() ? post.getCurrentParticipants() : (1 + tempSize);
+            int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
             partyInfoDto = PostResponseDto.PartyInfoDto.builder()
-                    .currentCount(post.getCurrentParticipants())
-                    .maxCount(post.getMaxParticipants())
-                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
+                    .currentCount(displayCurrent)
+                    .maxCount(max)
+                    .isRecruiting(!post.isClosed() && displayCurrent < max)
                     .build();
         }
 
@@ -217,7 +224,7 @@ public class PostService {
                 .type(post.getType())
                 .authorNickname(nickname)
                 .createdAt(post.getCreatedAt())
-                .currentParticipants(post.getCurrentParticipants())
+                .currentParticipants(displayCurrent)
                 .maxParticipants(post.getMaxParticipants())
                 .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
                 .commentCount(post.getComments() != null ? post.getComments().size() : 0)
@@ -323,13 +330,17 @@ public class PostService {
                 .roomId(aRoomId)
                 .build();
 
-        // 팟모집 정보 객체 생성 (타입이 PARTY일 때만)
+        // 팟모집: 모집중이면 currentCount = 1 + 임시 참가자 수 (리스트 2/4 등 표시용)
         PostResponseDto.PartyInfoDto partyInfoDto = null;
+        int displayCurrent = post.getCurrentParticipants();
         if (post.getType() == PostType.PARTY) {
+            int tempSize = postTempParticipantRepository.findByPost_PostId(post.getPostId()).size();
+            displayCurrent = post.isClosed() ? post.getCurrentParticipants() : (1 + tempSize);
+            int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
             partyInfoDto = PostResponseDto.PartyInfoDto.builder()
-                    .currentCount(post.getCurrentParticipants())
-                    .maxCount(post.getMaxParticipants())
-                    .isRecruiting(!post.isClosed() && post.getCurrentParticipants() < post.getMaxParticipants())
+                    .currentCount(displayCurrent)
+                    .maxCount(max)
+                    .isRecruiting(!post.isClosed() && displayCurrent < max)
                     .build();
         }
 
@@ -346,7 +357,7 @@ public class PostService {
                 .type(post.getType())
                 .authorNickname(nickname)
                 .createdAt(post.getCreatedAt())
-                .currentParticipants(post.getCurrentParticipants())
+                .currentParticipants(displayCurrent)
                 .maxParticipants(post.getMaxParticipants())
                 .likeCount(post.getLikes().size())
                 .categoryName(post.getCategory().getName())
