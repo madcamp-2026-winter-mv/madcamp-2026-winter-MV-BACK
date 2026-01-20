@@ -102,3 +102,30 @@
 3. **채팅 미읽음(알람3)**  
    - `ChatRoomResponseDto.unreadCount`, `POST /api/party/rooms/{id}/read` 등 기존 채팅 로직 유지  
    - 사이드바 배지는 COMMENT·CHAT_INVITE만 사용
+
+---
+
+## 7. 추가 수정 (채팅 프로필·게시글 참가자 노출)
+
+### 7.1 `ChatMessageDto`
+- **파일**: `dto/ChatMessageDto.java`
+- **추가 필드**: `senderProfileImageUrl` (String, nullable) — 채팅방 멤버 기준 닉네임 매칭으로 설정
+
+### 7.2 `ChatMemberRepository`
+- **메서드**: `List<ChatMember> findByChatRoom(ChatRoom chatRoom)`
+
+### 7.3 `PartyService`
+- **`getChatMessages`**: 채팅방 멤버의 닉네임→프로필이미지 맵을 만들어 각 메시지에 `senderProfileImageUrl` 세팅
+- **`findSenderProfileImageUrl(Long chatRoomId, String senderNickname)` (신규)**: 실시간 브로드캐스트 전 발신자 프로필 조회
+
+### 7.4 `ChatController`
+- **`sendMessage`**: `saveMessage` 후 `findSenderProfileImageUrl`로 `senderProfileImageUrl` 세팅 후 `convertAndSend`
+
+### 7.5 `PostResponseDto`
+- **추가 필드**: `chatRoomId` (Long, null 가능), `isChatParticipant` (boolean)
+- **용도**: 팟 모집 완료 글에서 ‘채팅방에서 대화를 나눠보세요 / 채팅방으로 이동’ 블록을 **참가자에게만** 노출
+
+### 7.6 `PostService`
+- **의존성**: `ChatMemberRepository` 추가
+- **`getPostDetail`**: `post.type == PARTY` 일 때 `chatRoomRepository.findByPostId` 로 채팅방 조회 후  
+  `chatRoomId` 설정, `chatMemberRepository.existsByChatRoomAndMember(room, member)` 로 `isChatParticipant` 설정

@@ -51,10 +51,9 @@ public class ChatController {
                 messageDto.getChatRoomId(), messageDto.getSenderNickname(), messageDto.getContent());
 
         try {
-            // DB에 메시지 영구 저장
             partyService.saveMessage(messageDto);
-
-            // 브로드캐스팅 로그
+            String img = partyService.findSenderProfileImageUrl(messageDto.getChatRoomId(), messageDto.getSenderNickname());
+            if (img != null) messageDto.setSenderProfileImageUrl(img);
             log.info("[웹소켓메시지] 브로드캐스팅 - target: /sub/chat/room/{}", messageDto.getChatRoomId());
             messagingTemplate.convertAndSend("/sub/chat/room/" + messageDto.getChatRoomId(), messageDto);
 

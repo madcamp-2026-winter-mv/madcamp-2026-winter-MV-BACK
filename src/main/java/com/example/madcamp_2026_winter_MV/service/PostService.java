@@ -31,6 +31,7 @@ public class PostService {
     private final LikeRepository likeRepository;
     private final VoteService voteService;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatMemberRepository chatMemberRepository;
     private final PostTempParticipantRepository postTempParticipantRepository;
 
     //  몰입캠프 참여자(1-4분반) 검증 로직
@@ -156,6 +157,8 @@ public class PostService {
         }
 
         PostResponseDto.PartyInfoDto partyInfoDto = null;
+        Long chatRoomId = null;
+        boolean isChatParticipant = false;
         if (post.getType() == PostType.PARTY) {
             int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
             partyInfoDto = PostResponseDto.PartyInfoDto.builder()
@@ -163,6 +166,11 @@ public class PostService {
                     .maxCount(max)
                     .isRecruiting(!post.isClosed() && displayCurrent < max)
                     .build();
+            var chatRoomOpt = chatRoomRepository.findByPostId(postId);
+            if (chatRoomOpt.isPresent()) {
+                chatRoomId = chatRoomOpt.get().getChatRoomId();
+                isChatParticipant = chatMemberRepository.existsByChatRoomAndMember(chatRoomOpt.get(), member);
+            }
         }
 
         return PostResponseDto.builder()
@@ -178,6 +186,8 @@ public class PostService {
                 .author(authorDto)
                 .partyInfo(partyInfoDto)
                 .tempParticipantIds(tempParticipantIds)
+                .chatRoomId(chatRoomId)
+                .isChatParticipant(isChatParticipant)
                 .build();
     }
 

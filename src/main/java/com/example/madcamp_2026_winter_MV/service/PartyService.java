@@ -167,16 +167,26 @@ public class PartyService {
         chatMessageRepository.save(message);
     }
 
-    // 3. 과거 채팅 내역 불러오기
+    // 3. 과거 채팅 내역 불러오기 (발신자 프로필 이미지: 채팅방 멤버 기준 닉네임 매칭)
     public List<ChatMessageDto> getChatMessages(Long chatRoomId) {
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        java.util.Map<String, String> nicknameToImage = chatMemberRepository.findByChatRoom(room).stream()
+                .filter(cm -> cm.getMember() != null)
+                .collect(Collectors.toMap(cm -> cm.getMember().getNickname(), cm -> cm.getMember().getProfileImage() != null ? cm.getMember().getProfileImage() : "", (a, b) -> a));
+
         return chatMessageRepository.findByChatRoom_ChatRoomIdOrderByTimestampAsc(chatRoomId)
                 .stream()
-                .map(m -> ChatMessageDto.builder()
-                        .chatRoomId(chatRoomId)
-                        .senderNickname(m.getSenderNickname())
-                        .content(m.getContent())
-                        .timestamp(m.getTimestamp().toString())
-                        .build())
+                .map(m -> {
+                    String img = nicknameToImage.get(m.getSenderNickname());
+                    return ChatMessageDto.builder()
+                            .chatRoomId(chatRoomId)
+                            .senderNickname(m.getSenderNickname())
+                            .senderProfileImageUrl((img != null && !img.isEmpty()) ? img : null)
+                            .content(m.getContent())
+                            .timestamp(m.getTimestamp().toString())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -242,6 +252,19 @@ public class PartyService {
         if (!chatMemberRepository.existsByChatRoomAndMember(room, member)) {
             chatMemberRepository.save(ChatMember.builder().chatRoom(room).member(member).build());
         }
+    }
+
+    /** 실시간 메시지 브로드캐스트 전 발신자 프로필 이미지 조회 (닉네임으로 채팅방 멤버 매칭) */
+    public String findSenderProfileImageUrl(Long chatRoomId, String senderNickname) {
+        if (chatRoomId == null || senderNickname == null) return null;
+        ChatRoom room = chatRoomRepository.findById(chatRoomId).orElse(null);
+        if (room == null) return null;
+        return chatMemberRepository.findByChatRoom(room).stream()
+                .filter(cm -> cm.getMember() != null && senderNickname.equals(cm.getMember().getNickname()))
+                .map(cm -> cm.getMember().getProfileImage())
+                .filter(img -> img != null && !img.isEmpty())
+                .findFirst()
+                .orElse(null);
     }
 
     // 6. 채팅방 읽음 시간 업데이트

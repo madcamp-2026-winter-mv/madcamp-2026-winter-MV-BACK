@@ -20,7 +20,7 @@ public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
     @Query("SELECT cm FROM ChatMember cm JOIN FETCH cm.chatRoom WHERE cm.member = :member")
     List<ChatMember> findByMemberWithChatRoom(@Param("member") Member member);
 
-    // 특정 방에서 특정 유저의 참여 정보 가져오기 (시간 업데이트용)
     Optional<ChatMember> findByChatRoomAndMember(ChatRoom chatRoom, Member member);
 
+    List<ChatMember> findByChatRoom(ChatRoom chatRoom);
 }

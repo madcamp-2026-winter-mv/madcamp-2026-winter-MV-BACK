@@ -48,6 +48,11 @@ public class PostResponseDto {
     /** 팟 작성자일 때만 존재. 해당 글의 임시 참가자(선택된 댓글 작성자) memberId 목록. */
     private List<Long> tempParticipantIds;
 
+    /** 팟 모집 완료 시 해당 게시글의 채팅방 ID. 없으면 null. */
+    private Long chatRoomId;
+    /** 팟 모집 완료 시, 현재 사용자가 그 채팅방 참가자인지. */
+    private boolean isChatParticipant;
+
     @Getter @Builder
     @NoArgsConstructor @AllArgsConstructor
     public static class CommentResponseDto {
