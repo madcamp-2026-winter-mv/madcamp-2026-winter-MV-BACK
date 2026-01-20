@@ -238,7 +238,7 @@ public class PartyService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        return chatMemberRepository.findByMember(member).stream()
+        return chatMemberRepository.findByMemberWithChatRoom(member).stream()
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
                     String postTitle = postRepository.findById(room.getPostId())
