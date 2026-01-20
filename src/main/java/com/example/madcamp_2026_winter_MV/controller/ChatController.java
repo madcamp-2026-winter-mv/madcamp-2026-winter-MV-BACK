@@ -24,6 +24,7 @@ public class ChatController {
     @GetMapping("/api/chat/rooms")
     public ResponseEntity<List<ChatRoomResponseDto>> getMyRooms(
             @AuthenticationPrincipal OAuth2User principal) {
+        // 소셜 로그인 기반 이메일 추출
         String email = (principal != null) ? principal.getAttribute("email") : "test@gmail.com";
         List<ChatRoomResponseDto> rooms = partyService.getMyChatRooms(email);
         return ResponseEntity.ok(rooms);
@@ -37,9 +38,13 @@ public class ChatController {
     }
 
     // 3. [WebSocket] 실시간 메시지 전송 및 저장
+    // 프론트엔드 전송 경로: /pub/chat/message
     @MessageMapping("/chat/message")
     public void sendMessage(ChatMessageDto messageDto) {
+        // DB에 메시지 영구 저장
         partyService.saveMessage(messageDto);
+
+        // 해당 채팅방을 구독 중인(/sub/chat/room/{id}) 모든 클라이언트에게 메시지 브로드캐스팅
         messagingTemplate.convertAndSend("/sub/chat/room/" + messageDto.getChatRoomId(), messageDto);
     }
 }

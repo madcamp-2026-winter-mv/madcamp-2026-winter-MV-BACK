@@ -146,7 +146,6 @@ public class PostService {
                 .roomId(authorRoomId)
                 .build();
 
-        // 팟: 임시 참가자 목록을 모든 방문자에게 제공(본인 댓글 선택 여부·참가 명단용). 모집중이면 currentCount = 1 + 임시 참가자.
         List<Long> tempParticipantIds = null;
         int displayCurrent = post.getCurrentParticipants();
         if (post.getType() == PostType.PARTY) {
@@ -195,50 +194,7 @@ public class PostService {
     }
 
     private PostResponseDto convertToDto(Post post) {
-        String contentSummary = post.getContent();
-        if (contentSummary != null && contentSummary.length() > 50) {
-            contentSummary = contentSummary.substring(0, 50) + "...";
-        }
-
-        String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
-        Long aRoomId = post.isAnonymous() ? null : (post.getMember() == null || post.getMember().getRoom() == null ? null : post.getMember().getRoom().getRoomId());
-        String aImg = post.isAnonymous() || post.getMember() == null ? null : post.getMember().getProfileImage();
-        PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
-                .nickname(nickname)
-                .isAnonymous(post.isAnonymous())
-                .imageUrl(aImg)
-                .roomId(aRoomId)
-                .build();
-
-        PostResponseDto.PartyInfoDto partyInfoDto = null;
-        int displayCurrent = post.getCurrentParticipants();
-        if (post.getType() == PostType.PARTY) {
-            int tempSize = postTempParticipantRepository.findByPost_PostId(post.getPostId()).size();
-            displayCurrent = post.isClosed() ? post.getCurrentParticipants() : (1 + tempSize);
-            int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
-            partyInfoDto = PostResponseDto.PartyInfoDto.builder()
-                    .currentCount(displayCurrent)
-                    .maxCount(max)
-                    .isRecruiting(!post.isClosed() && displayCurrent < max)
-                    .build();
-        }
-
-        return PostResponseDto.builder()
-                .postId(post.getPostId())
-                .title(post.getTitle())
-                .content(contentSummary)
-                .type(post.getType())
-                .authorNickname(nickname)
-                .createdAt(post.getCreatedAt())
-                .currentParticipants(displayCurrent)
-                .maxParticipants(post.getMaxParticipants())
-                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
-                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
-                .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
-                .timeAgo(formatTimeAgo(post.getCreatedAt()))
-                .author(authorDto)
-                .partyInfo(partyInfoDto)
-                .build();
+        return convertToFrontendDto(post); // 로직 통합을 위해 convertToFrontendDto 호출
     }
 
     @Transactional(readOnly = true)
@@ -318,7 +274,6 @@ public class PostService {
             posts = postRepository.findByCategory_Name(categoryName, pageable);
         }
 
-        // 프론트엔드 전용 DTO 변환 메서드 사용
         return posts.map(this::convertToFrontendDto);
     }
 
@@ -337,7 +292,7 @@ public class PostService {
                 .roomId(aRoomId)
                 .build();
 
-        // 팟모집: 모집중이면 currentCount = 1 + 임시 참가자 수 (리스트 2/4 등 표시용)
+        // 팟모집: 모집중이면 currentCount = 1 + 임시 참가자 수
         PostResponseDto.PartyInfoDto partyInfoDto = null;
         int displayCurrent = post.getCurrentParticipants();
         if (post.getType() == PostType.PARTY) {
@@ -366,8 +321,9 @@ public class PostService {
                 .createdAt(post.getCreatedAt())
                 .currentParticipants(displayCurrent)
                 .maxParticipants(post.getMaxParticipants())
-                .likeCount(post.getLikes().size())
-                .categoryName(post.getCategory().getName())
+                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
+                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
+                .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
                 .timeAgo(timeAgo)
                 .author(authorDto)
                 .partyInfo(partyInfoDto)
