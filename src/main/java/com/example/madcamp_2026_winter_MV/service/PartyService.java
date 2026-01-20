@@ -85,12 +85,12 @@ public class PartyService {
                             .orElseThrow(() -> new IllegalArgumentException("참가자 ID " + mId + "를 찾을 수 없습니다."));
                     saveChatMember(savedRoom, m);
 
-                    // [추가] 팟 확정 알림 발송
+                    // [추가] 팟 확정 알림 발송 (CHAT_INVITE)
                     if (m.isAllowAlarm()) {
-                        notificationService.createNotification(
+                        notificationService.createNotificationForChatInvite(
                                 m,
-                                post,
-                                "'" + post.getTitle() + "' 팟의 최종 멤버로 확정되었습니다!"
+                                "'" + post.getTitle() + "' 팟의 최종 멤버로 확정되었습니다. 채팅방에 참여해보세요!",
+                                "/chat?room=" + savedRoom.getChatRoomId()
                         );
                     }
                 }
@@ -200,6 +200,15 @@ public class PartyService {
         saveChatMember(room, newMember);
 
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
+
+        // 채팅방 초대 알림 (CHAT_INVITE)
+        if (newMember.isAllowAlarm()) {
+            notificationService.createNotificationForChatInvite(
+                    newMember,
+                    "'" + post.getTitle() + "' 채팅방에 초대되었습니다.",
+                    "/chat?room=" + chatRoomId
+            );
+        }
 
         return newMember.getNickname();
     }

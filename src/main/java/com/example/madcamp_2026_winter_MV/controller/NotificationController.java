@@ -59,7 +59,14 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
-    // 5. 읽지 않은 알림 개수 조회
+    // 5. 알림 개별 읽음 처리 (읽음 버튼 클릭, 이동 없음)
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
+        notificationService.markAsRead(notificationId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 6. 읽지 않은 알림 개수 조회 (전체)
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal OAuth2User principal) {
         if (principal == null) {
@@ -68,7 +75,18 @@ public class NotificationController {
         String email = principal.getAttribute("email");
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
         return ResponseEntity.ok(notificationService.getUnreadNotificationCount(member));
+    }
+
+    // 7. 사이드바 배지용: COMMENT, CHAT_INVITE만 (알람3 채팅 미읽음 제외). 개수 반환, 0이면 표시 안 함.
+    @GetMapping("/unread-count/sidebar")
+    public ResponseEntity<Long> getSidebarUnreadCount(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String email = principal.getAttribute("email");
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        return ResponseEntity.ok(notificationService.getUnreadCountForSidebar(member));
     }
 }
