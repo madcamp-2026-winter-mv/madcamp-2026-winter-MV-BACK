@@ -198,11 +198,10 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostResponseDto> searchPosts(String keyword) {
-        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword)
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public Page<PostResponseDto> searchPosts(String keyword, Pageable pageable) {
+        // Repository에서 페이징이 적용된 검색 결과를 가져옴
+        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable)
+                .map(this::convertToFrontendDto);
     }
 
     @Transactional

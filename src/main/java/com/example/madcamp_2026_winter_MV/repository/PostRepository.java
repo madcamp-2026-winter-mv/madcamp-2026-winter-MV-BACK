@@ -44,8 +44,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByTypeAndIsClosedFalseAndCreatedAtBefore(PostType type, LocalDateTime dateTime);
 
     // 10.제목 혹은 내용에 키워드가 포함된 글 검색
-    List<Post> findByTitleContainingOrContentContaining(String title, String content);
-
+    Page<Post> findByTitleContainingOrContentContaining(String titleKeyword, String contentKeyword, Pageable pageable);
     // 11. 카테고리 이름으로 검색
     Page<Post> findByCategory_Name(String name, Pageable pageable);
 

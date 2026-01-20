@@ -5,6 +5,10 @@ import com.example.madcamp_2026_winter_MV.dto.PostResponseDto;
 import com.example.madcamp_2026_winter_MV.entity.Post;
 import com.example.madcamp_2026_winter_MV.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -110,7 +114,15 @@ public class PostController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<PostResponseDto>> searchPosts(@RequestParam String keyword) {
-        return ResponseEntity.ok(postService.searchPosts(keyword));
+    public ResponseEntity<Page<PostResponseDto>> searchPosts(
+            @RequestParam String keyword,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        // 검색어가 비어있을 경우 예외 처리
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return ResponseEntity.ok(Page.empty());
+        }
+
+        return ResponseEntity.ok(postService.searchPosts(keyword, pageable));
     }
 }
