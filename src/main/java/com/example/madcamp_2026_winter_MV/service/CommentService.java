@@ -55,4 +55,36 @@ public class CommentService {
 
         return savedComment;
     }
+    @Transactional
+    public Comment updateComment(Long commentId, String content, String email) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        // 작성자 검증
+        if (!comment.getMember().getEmail().equals(email)) {
+            throw new IllegalStateException("본인이 작성한 댓글만 수정할 수 있습니다.");
+        }
+
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("수정할 내용을 입력해 주세요.");
+        }
+
+        comment.setContent(content.trim());
+        return comment;
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, String email) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        // 작성자 검증
+        if (!comment.getMember().getEmail().equals(email)) {
+            throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        }
+
+        commentRepository.delete(comment);
+    }
+
+
 }

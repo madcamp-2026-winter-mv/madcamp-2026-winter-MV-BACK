@@ -51,4 +51,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 12. 특정 타입의 게시글 페이징 조회
     Page<Post> findByType(PostType type, Pageable pageable);
+
 }
