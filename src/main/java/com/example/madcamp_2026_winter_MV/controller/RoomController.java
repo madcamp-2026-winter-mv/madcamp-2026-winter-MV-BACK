@@ -3,6 +3,7 @@ package com.example.madcamp_2026_winter_MV.controller;
 import com.example.madcamp_2026_winter_MV.entity.Member;
 import com.example.madcamp_2026_winter_MV.entity.Role;
 import com.example.madcamp_2026_winter_MV.entity.Room;
+import com.example.madcamp_2026_winter_MV.entity.Schedule;
 import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
 import com.example.madcamp_2026_winter_MV.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -97,5 +98,22 @@ public class RoomController {
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    // 분반 일정 조회 (모든 멤버 가능)
+    @GetMapping("/{roomId}/schedules")
+    public ResponseEntity<List<Schedule>> getSchedules(@PathVariable Long roomId,
+                                                       @AuthenticationPrincipal OAuth2User principal) {
+        String email = principal.getAttribute("email");
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 본인이 속한 분반의 일정만 볼 수 있게 함
+        if (member.getRoom() == null || !member.getRoom().getRoomId().equals(roomId)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<Schedule> schedules = roomService.getSchedules(roomId);
+        return ResponseEntity.ok(schedules);
     }
 }
