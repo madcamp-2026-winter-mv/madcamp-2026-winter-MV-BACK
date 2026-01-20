@@ -45,7 +45,7 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotifications(member));
     }
 
-    //  3. 알림 클릭 (읽음 처리 및 이동 URL 반환)
+    // 3. 알림 클릭 (읽음 처리 및 이동 URL 반환)
     @PostMapping("/{notificationId}/click")
     public ResponseEntity<String> clickNotification(@PathVariable Long notificationId) {
         String redirectUrl = notificationService.clickNotification(notificationId);
@@ -57,5 +57,18 @@ public class NotificationController {
     public ResponseEntity<Void> deleteNotification(@PathVariable Long notificationId) {
         notificationService.deleteNotification(notificationId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 5. 읽지 않은 알림 개수 조회
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String email = principal.getAttribute("email");
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        return ResponseEntity.ok(notificationService.getUnreadNotificationCount(member));
     }
 }

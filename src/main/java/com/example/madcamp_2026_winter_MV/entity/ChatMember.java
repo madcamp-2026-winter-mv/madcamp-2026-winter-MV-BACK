@@ -3,6 +3,8 @@ package com.example.madcamp_2026_winter_MV.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ChatMember {
@@ -18,4 +20,8 @@ public class ChatMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
     private Member member;
+
+    // 마지막으로 읽은 시간
+    @Column(name = "last_read_at")
+    private LocalDateTime lastReadAt;
 }

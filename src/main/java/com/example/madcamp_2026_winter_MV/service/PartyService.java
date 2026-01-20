@@ -28,14 +28,16 @@ public class PartyService {
     private final PostTempParticipantRepository postTempParticipantRepository;
     private final CommentRepository commentRepository;
 
-    //  1. 팟 확정 및 채팅방 생성
+    // 알림 서비스 추가
+    private final NotificationService notificationService;
+
+    // 1. 팟 확정 및 채팅방 생성
     @Transactional
     public Long confirmAndCreateChat(Long postId, List<Long> selectedMemberIds, String ownerEmail) {
         log.info("[채팅방개설] Service 시작 postId={} selectedMemberIds={} ownerEmail={}",
                 postId, selectedMemberIds, (ownerEmail != null && ownerEmail.length() > 2) ? ownerEmail.substring(0, 2) + "***" : ownerEmail);
 
         try {
-            // 0. 중복 생성 방지
             if (chatRoomRepository.existsByPostId(postId)) {
                 log.warn("[채팅방개설] 이미 채팅방이 존재함 postId={}", postId);
                 throw new IllegalStateException("이미 채팅방이 개설된 게시글입니다.");
@@ -55,48 +57,53 @@ public class PartyService {
                 throw new IllegalStateException("작성자만 팟을 확정할 수 있습니다.");
             }
 
-            // 인원 검증
             int max = (post.getMaxParticipants() != null) ? post.getMaxParticipants() : 0;
             int totalPartyMembers = (selectedMemberIds != null ? selectedMemberIds.size() : 0) + 1;
             if (max > 0 && totalPartyMembers > max) {
                 throw new IllegalArgumentException("최대 모집 인원을 초과할 수 없습니다.");
             }
 
-            // Post 상태 업데이트
             post.setClosed(true);
             post.setCurrentParticipants(totalPartyMembers);
 
-            // 1. ChatRoom 생성 (roomName이 DB의 name 혹은 room_name과 잘 매핑되는지 확인 필요)
             ChatRoom chatRoom = ChatRoom.builder()
                     .roomName(post.getTitle())
                     .postId(postId)
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            // saveAndFlush를 사용하여 즉시 DB 반영을 시도 (에러 발생 시 여기서 바로 catch로 넘어감)
             ChatRoom savedRoom = chatRoomRepository.saveAndFlush(chatRoom);
             log.info("[채팅방개설] ChatRoom 저장 완료 ID={}", savedRoom.getChatRoomId());
 
-            // 2. 멤버 등록 (방장 + 선택된 인원)
+            // 방장 등록
             saveChatMember(savedRoom, owner);
+
+            // 참여자 등록 및 알림 발송
             if (selectedMemberIds != null) {
                 for (Long mId : selectedMemberIds) {
                     Member m = memberRepository.findById(mId)
                             .orElseThrow(() -> new IllegalArgumentException("참가자 ID " + mId + "를 찾을 수 없습니다."));
                     saveChatMember(savedRoom, m);
+
+                    // [추가] 팟 확정 알림 발송
+                    if (m.isAllowAlarm()) {
+                        notificationService.createNotification(
+                                m,
+                                post,
+                                "'" + post.getTitle() + "' 팟의 최종 멤버로 확정되었습니다!"
+                        );
+                    }
                 }
             }
 
-            // 3. 환영 메시지
             ChatMessage welcomeMessage = ChatMessage.builder()
                     .chatRoom(savedRoom)
-                    .senderNickname("시스템") // "몰입캠프 " 대신 공백 없는 깔끔한 이름 권장
-                    .content("'" + post.getTitle() + "' 팟이 확정되었습니다!")
+                    .senderNickname("몰입캠프")
+                    .content("'" + post.getTitle() + "'게시글의 팟이 확정되었습니다!")
                     .timestamp(LocalDateTime.now())
                     .build();
             chatMessageRepository.save(welcomeMessage);
 
-            // 4. 임시 참가자 데이터 삭제 (Repository에 @Modifying @Transactional 필수)
             postTempParticipantRepository.deleteByPost_PostId(postId);
             log.info("[채팅방개설] 임시참가자 삭제 완료");
 
@@ -104,11 +111,11 @@ public class PartyService {
 
         } catch (Exception ex) {
             log.error("[채팅방개설] 실패 - 원인: {}", ex.getMessage());
-            throw ex; // 트랜잭션 롤백을 위해 다시 던짐
+            throw ex;
         }
     }
 
-    /** 팟 작성자가 댓글 작성자를 임시 참가자로 토글. 중복 미허용. 댓글 작성자만 추가 가능. */
+    /** 팟 작성자가 댓글 작성자를 임시 참가자로 토글. */
     @Transactional
     public java.util.List<Long> toggleTempParticipant(Long postId, Long memberId, String authorEmail) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
@@ -133,7 +140,7 @@ public class PartyService {
         } else {
             int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
             long current = postTempParticipantRepository.findByPost_PostId(postId).size();
-            if (current + 1 + 1 > max) { // 작성자 1 + 현재 임시 + 추가 1
+            if (current + 1 + 1 > max) {
                 throw new IllegalStateException("최대 모집 인원을 초과할 수 없습니다.");
             }
             Member toAdd = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
@@ -144,7 +151,7 @@ public class PartyService {
                 .collect(Collectors.toList());
     }
 
-    //  2. 실시간 메시지 DB 저장
+    // 2. 실시간 메시지 DB 저장
     @Transactional
     public void saveMessage(ChatMessageDto dto) {
         ChatRoom room = chatRoomRepository.findById(dto.getChatRoomId())
@@ -173,7 +180,6 @@ public class PartyService {
                 .collect(Collectors.toList());
     }
 
-
     // 4. 팟 멤버 추가
     @Transactional
     public String addMemberToParty(Long chatRoomId, Long newMemberId, String ownerEmail) {
@@ -181,12 +187,10 @@ public class PartyService {
         Post post = postRepository.findById(room.getPostId()).orElseThrow();
         Member owner = memberRepository.findByEmail(ownerEmail).orElseThrow();
 
-        // 방장 권한 체크
         if (!post.getMember().getMemberId().equals(owner.getMemberId())) {
             throw new IllegalStateException("작성자만 멤버를 추가할 수 있습니다.");
         }
 
-        // 인원 초과 체크
         long currentCount = chatMemberRepository.countByChatRoom(room);
         if (currentCount >= post.getMaxParticipants()) {
             throw new IllegalStateException("이미 꽉 찬 팟입니다.");
@@ -195,13 +199,12 @@ public class PartyService {
         Member newMember = memberRepository.findById(newMemberId).orElseThrow();
         saveChatMember(room, newMember);
 
-        // 게시글의 현재 인원수 업데이트
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
 
         return newMember.getNickname();
     }
 
-    //  5. 팟 멤버 내보내기
+    // 5. 팟 멤버 내보내기
     @Transactional
     public String leaveParty(Long chatRoomId, Long targetMemberId, String requestUserEmail) {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
@@ -209,7 +212,6 @@ public class PartyService {
         Member requestUser = memberRepository.findByEmail(requestUserEmail).orElseThrow();
         Post post = postRepository.findById(room.getPostId()).orElseThrow();
 
-        // 본인이 나가거나, 혹은 작성자가 강퇴하는 경우만 허용
         boolean isOwner = post.getMember().getMemberId().equals(requestUser.getMemberId());
         boolean isSelf = target.getMemberId().equals(requestUser.getMemberId());
 
@@ -219,10 +221,9 @@ public class PartyService {
 
         chatMemberRepository.deleteByChatRoomAndMember(room, target);
 
-        // 인원이 빠졌으니 게시글 상태 업데이트 (다시 모집 중으로 변경 가능)
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
         if (post.getCurrentParticipants() < post.getMaxParticipants()) {
-            post.setClosed(false); // 빈자리가 생겼으므로 다시 모집 중 상태로
+            post.setClosed(false);
         }
 
         return target.getNickname();
@@ -233,7 +234,18 @@ public class PartyService {
             chatMemberRepository.save(ChatMember.builder().chatRoom(room).member(member).build());
         }
     }
-    // 6. 내가 참여 중인 모든 채팅방 목록 조회
+
+    // 7. 채팅방 읽음 시간 업데이트
+    @Transactional
+    public void updateLastReadTime(Long chatRoomId, String email) {
+        Member member = memberRepository.findByEmail(email).orElseThrow();
+        ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
+        ChatMember chatMember = chatMemberRepository.findByChatRoomAndMember(room, member)
+                .orElseThrow(() -> new IllegalArgumentException("참여 중인 채팅방이 아닙니다."));
+        chatMember.setLastReadAt(LocalDateTime.now());
+    }
+
+    // 6. 내가 참여 중인 모든 채팅방 목록 조회 (미읽음 카운트 로직 추가)
     public List<ChatRoomResponseDto> getMyChatRooms(String email) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -244,7 +256,13 @@ public class PartyService {
                     String postTitle = postRepository.findById(room.getPostId())
                             .map(Post::getTitle)
                             .orElse("게시글 #" + room.getPostId());
+
                     int participantCount = (int) chatMemberRepository.countByChatRoom(room);
+
+                    //  미읽음 메시지 수 계산
+                    LocalDateTime lastRead = (cm.getLastReadAt() != null) ? cm.getLastReadAt() : room.getCreatedAt();
+                    long unreadCount = chatMessageRepository.countUnreadMessages(room.getChatRoomId(), lastRead);
+
                     return ChatRoomResponseDto.builder()
                             .chatRoomId(room.getChatRoomId())
                             .roomName(room.getRoomName())
@@ -252,6 +270,7 @@ public class PartyService {
                             .postTitle(postTitle)
                             .createdAt(room.getCreatedAt().toString())
                             .participantCount(participantCount)
+                            .unreadCount((int) unreadCount) // DTO에 필드 추가 필요
                             .build();
                 })
                 .collect(Collectors.toList());

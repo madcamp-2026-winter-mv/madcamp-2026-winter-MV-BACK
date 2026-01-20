@@ -109,4 +109,20 @@ public class PartyController {
 
         return ResponseEntity.ok().build();
     }
+
+    // 채팅방 입장 시 읽음 시간 업데이트 (미읽음 카운트 0 처리용)
+    @PostMapping("/rooms/{chatRoomId}/read")
+    public ResponseEntity<Void> updateReadTime(
+            @PathVariable Long chatRoomId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = principal.getAttribute("email");
+        partyService.updateLastReadTime(chatRoomId, email);
+
+        return ResponseEntity.ok().build();
+    }
 }

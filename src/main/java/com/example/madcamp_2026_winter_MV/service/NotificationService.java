@@ -30,11 +30,9 @@ public class NotificationService {
         SseEmitter emitter = new SseEmitter(60L * 1000 * 60);
         emitters.put(email, emitter);
 
-        // 연결 종료/타임아웃 시 삭제
         emitter.onCompletion(() -> emitters.remove(email));
         emitter.onTimeout(() -> emitters.remove(email));
 
-        // 첫 연결 시 503 에러 방지용 더미 데이터 전송
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected!"));
         } catch (IOException e) {
@@ -60,14 +58,24 @@ public class NotificationService {
         if (emitters.containsKey(email)) {
             SseEmitter emitter = emitters.get(email);
             try {
-                // 알림 데이터를 DTO로 변환하여 전송
+                // 알림 내용과 현재 읽지 않은 총 개수를 함께 전송
+                long unreadCount = notificationRepository.countByReceiverAndIsReadFalse(receiver);
+
                 emitter.send(SseEmitter.event()
                         .name("notification")
-                        .data(NotificationResponseDto.from(notification)));
+                        .data(Map.of(
+                                "notification", NotificationResponseDto.from(notification),
+                                "unreadCount", unreadCount
+                        )));
             } catch (IOException e) {
                 emitters.remove(email);
             }
         }
+    }
+
+    // 3. 읽지 않은 알림 개수 조회 메서드 추가
+    public long getUnreadNotificationCount(Member member) {
+        return notificationRepository.countByReceiverAndIsReadFalse(member);
     }
 
     public List<NotificationResponseDto> getNotifications(Member member) {

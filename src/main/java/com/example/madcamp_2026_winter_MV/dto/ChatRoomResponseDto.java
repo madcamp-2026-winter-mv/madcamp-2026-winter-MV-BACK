@@ -10,4 +10,5 @@ public class ChatRoomResponseDto {
     private String postTitle;
     private String createdAt;
     private Integer participantCount;
+    int unreadCount;
 }
