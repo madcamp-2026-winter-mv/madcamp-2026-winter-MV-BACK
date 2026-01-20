@@ -41,6 +41,7 @@ public class CommentController {
                 .isAnonymous(comment.isAnonymous())
                 .roomId(cRoomId)
                 .imageUrl(cImg)
+                .isMine(true)
                 .build();
 
         return ResponseEntity.ok(response);
@@ -59,10 +60,12 @@ public class CommentController {
 
         return ResponseEntity.ok(PostResponseDto.CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
+                .memberId(comment.getMember().getMemberId())
                 .content(comment.getContent())
                 .authorNickname(comment.isAnonymous() ? "익명" : comment.getMember().getNickname())
                 .createdAt(comment.getCreatedAt())
                 .isAnonymous(comment.isAnonymous())
+                .isMine(true)
                 .build());
     }
 

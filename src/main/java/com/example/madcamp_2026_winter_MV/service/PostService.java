@@ -114,12 +114,13 @@ public class PostService {
                         .build())
                 .collect(Collectors.toList());
 
-        // 댓글 목록 빌드. 익명이면 분반(roomId)·프로필 미노출.
+        // 댓글 목록 빌드. 익명이면 분반(roomId)·프로필 미노출. isMine은 이메일 기준(익명 댓글도 수정/삭제 가능).
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> {
                     Long cRoomId = (comment.isAnonymous() || comment.getMember() == null || comment.getMember().getRoom() == null)
                             ? null : comment.getMember().getRoom().getRoomId();
                     String cImg = comment.isAnonymous() || comment.getMember() == null ? null : comment.getMember().getProfileImage();
+                    boolean isMine = comment.getMember() != null && comment.getMember().getEmail().equals(email);
                     return PostResponseDto.CommentResponseDto.builder()
                             .commentId(comment.getCommentId())
                             .memberId(comment.getMember().getMemberId())
@@ -129,6 +130,7 @@ public class PostService {
                             .isAnonymous(comment.isAnonymous())
                             .roomId(cRoomId)
                             .imageUrl(cImg)
+                            .isMine(isMine)
                             .build();
                 })
                 .collect(Collectors.toList());

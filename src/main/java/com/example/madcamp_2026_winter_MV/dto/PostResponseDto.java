@@ -58,6 +58,8 @@ public class PostResponseDto {
         private Long roomId;
         /** 댓글 작성자 프로필 이미지 (익명이면 null) */
         private String imageUrl;
+        /** 현재 로그인 사용자가 댓글 작성자인지 (이메일 기준, 익명 댓글도 수정/삭제 가능) */
+        private boolean isMine;
     }
 
     @Getter @Builder

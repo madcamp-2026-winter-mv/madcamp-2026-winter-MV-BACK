@@ -75,11 +75,14 @@ public class CategoryController {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
         String newName = request.get("name");
-        if (categoryRepository.existsByName(newName)) {
+        if (newName != null && newName.equals(category.getName())) {
+            return ResponseEntity.ok("카테고리 이름이 수정되었습니다.");
+        }
+        if (newName != null && categoryRepository.existsByName(newName)) {
             return ResponseEntity.badRequest().body("이미 존재하는 카테고리 이름입니다.");
         }
 
-        category.setName(newName);
+        if (newName != null) category.setName(newName);
         return ResponseEntity.ok("카테고리 이름이 수정되었습니다.");
     }
 
