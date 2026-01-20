@@ -66,6 +66,7 @@ public class PostService {
                 .category(category)
                 .maxParticipants(dto.getMaxParticipants() != null ? dto.getMaxParticipants() : 0)
                 .currentParticipants(dto.getType() == PostType.PARTY ? 1 : 0)
+                .isAnonymous(Boolean.TRUE.equals(dto.getIsAnonymous()))
                 .build();
 
         if (dto.getType() == PostType.VOTE && dto.getVoteContents() != null) {
@@ -101,18 +102,26 @@ public class PostService {
         boolean isVoted = voteRecordRepository.existsByMemberMemberIdAndPostPostId(member.getMemberId(), postId);
         boolean isLiked = likeRepository.findByMemberAndPost(member, post).isPresent();
 
-        List<VoteDto.VoteResponse> voteOptions = voteService.getVoteDetails(email, postId).stream()
-                .map(option -> VoteDto.VoteResponse.builder().optionId(option.getId()).content(option.getContent()).count(option.getCount()).build())
+        List<VoteOption> voteOpts = voteService.getVoteDetails(email, postId);
+        int totalVotes = voteOpts.stream().mapToInt(VoteOption::getCount).sum();
+        List<VoteDto.VoteResponse> voteOptions = voteOpts.stream()
+                .map(opt -> VoteDto.VoteResponse.builder()
+                        .optionId(opt.getId())
+                        .content(opt.getContent())
+                        .count(opt.getCount())
+                        .percentage(totalVotes == 0 ? 0.0 : (double) opt.getCount() / totalVotes * 100)
+                        .build())
                 .collect(Collectors.toList());
 
-        //댓글 목록 빌드 시 memberId 포함
+        //댓글 목록 빌드 시 memberId, isAnonymous 포함
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
                 .map(comment -> PostResponseDto.CommentResponseDto.builder()
                         .commentId(comment.getCommentId())
                         .memberId(comment.getMember().getMemberId())
                         .content(comment.getContent())
-                        .authorNickname(comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음")
+                        .authorNickname(comment.isAnonymous() ? "익명" : (comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음"))
                         .createdAt(comment.getCreatedAt())
+                        .isAnonymous(comment.isAnonymous())
                         .build())
                 .collect(Collectors.toList());
 
@@ -139,6 +148,7 @@ public class PostService {
                 .voteOptions(voteOptions).currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants()).comments(comments)
                 .isAuthor(post.getMember().getEmail().equals(email))
+                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
                 .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
                 .timeAgo(formatTimeAgo(post.getCreatedAt()))
                 .author(authorDto)
@@ -190,6 +200,7 @@ public class PostService {
                 .currentParticipants(post.getCurrentParticipants())
                 .maxParticipants(post.getMaxParticipants())
                 .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
+                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
                 .categoryName(post.getCategory() != null ? post.getCategory().getName() : null)
                 .timeAgo(formatTimeAgo(post.getCreatedAt()))
                 .author(authorDto)

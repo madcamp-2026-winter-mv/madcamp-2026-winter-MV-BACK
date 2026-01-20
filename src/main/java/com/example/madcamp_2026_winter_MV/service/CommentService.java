@@ -20,18 +20,23 @@ public class CommentService {
     private final NotificationService notificationService;
 
     @Transactional
-    public Comment createComment(Long postId, String content, String email) {
+    public Comment createComment(Long postId, String content, String email, boolean anonymous) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해 주세요.");
+        }
+
         // 1. 댓글 저장
         Comment comment = Comment.builder()
                 .post(post)
                 .member(member)
-                .content(content)
+                .content(content.trim())
+                .isAnonymous(anonymous)
                 .build();
 
         Comment savedComment = commentRepository.save(comment);

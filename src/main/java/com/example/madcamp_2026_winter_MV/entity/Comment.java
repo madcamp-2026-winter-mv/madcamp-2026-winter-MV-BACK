@@ -30,6 +30,10 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean isAnonymous = false;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

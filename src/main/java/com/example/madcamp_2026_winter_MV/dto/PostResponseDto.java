@@ -28,6 +28,8 @@ public class PostResponseDto {
 
     private boolean isAuthor;
 
+    private Integer commentCount;
+
     // 1. 카테고리 이름
     private String categoryName;
 
@@ -48,6 +50,7 @@ public class PostResponseDto {
         private String content;
         private String authorNickname;
         private LocalDateTime createdAt;
+        private boolean isAnonymous;
     }
 
     @Getter @Builder

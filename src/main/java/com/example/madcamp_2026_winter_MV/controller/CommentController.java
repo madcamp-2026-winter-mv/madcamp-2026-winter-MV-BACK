@@ -21,19 +21,22 @@ public class CommentController {
     @PostMapping("/{postId}/comments")
     public ResponseEntity<PostResponseDto.CommentResponseDto> createComment(
             @PathVariable Long postId,
-            @RequestBody Map<String, String> body,
+            @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal OAuth2User principal) {
 
         String email = principal.getAttribute("email");
-        String content = body.get("content");
+        String content = body.get("content") != null ? body.get("content").toString() : null;
+        boolean anonymous = "true".equals(String.valueOf(body.get("anonymous")));
 
-        Comment comment = commentService.createComment(postId, content, email);
+        Comment comment = commentService.createComment(postId, content, email, anonymous);
 
         PostResponseDto.CommentResponseDto response = PostResponseDto.CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
+                .memberId(comment.getMember().getMemberId())
                 .content(comment.getContent())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.isAnonymous() ? "익명" : comment.getMember().getNickname())
                 .createdAt(comment.getCreatedAt())
+                .isAnonymous(comment.isAnonymous())
                 .build();
 
         return ResponseEntity.ok(response);

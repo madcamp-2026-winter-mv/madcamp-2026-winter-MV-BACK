@@ -14,4 +14,5 @@ public class PostRequestDto {
     private PostType type;
     private Integer maxParticipants;
     private List<String> voteContents;
+    private Boolean isAnonymous;
 }
