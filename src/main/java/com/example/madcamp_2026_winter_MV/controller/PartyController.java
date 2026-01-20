@@ -38,23 +38,33 @@ public class PartyController {
     @PostMapping("/{postId}/confirm")
     public ResponseEntity<Long> confirmParty(
             @PathVariable Long postId,
-            @RequestBody List<Long> selectedMemberIds,
+            @RequestBody java.util.Map<String, Object> body,
             @AuthenticationPrincipal OAuth2User principal) {
-        int size = (selectedMemberIds != null) ? selectedMemberIds.size() : -1;
+
+        // 1. JSON에서 리스트 꺼내기
+        Object listObj = body.get("selectedMemberIds");
+        List<Long> selectedMemberIds = new java.util.ArrayList<>();
+
+        if (listObj instanceof List<?>) {
+            for (Object item : (List<?>) listObj) {
+                selectedMemberIds.add(Long.valueOf(item.toString()));
+            }
+        }
+
+        int size = selectedMemberIds.size();
         String email = (principal != null) ? String.valueOf(principal.getAttribute("email")) : "null";
+
         log.info("[채팅방개설] Controller 진입 postId={} selectedMemberIds.size={} selectedMemberIds={} email={}",
                 postId, size, selectedMemberIds, (email != null && email.length() > 2) ? email.substring(0, 2) + "***" : email);
+
         try {
-            String e = principal != null ? (String) principal.getAttribute("email") : null;
-            if (e == null) {
-                log.warn("[채팅방개설] principal 또는 email 없음");
-            }
+            String e = (principal != null) ? (String) principal.getAttribute("email") : null;
             Long chatRoomId = partyService.confirmAndCreateChat(postId, selectedMemberIds, e);
             log.info("[채팅방개설] Controller 성공 postId={} chatRoomId={}", postId, chatRoomId);
             return ResponseEntity.ok(chatRoomId);
         } catch (Exception ex) {
-            log.error("[채팅방개설] Controller 예외 postId={} selectedMemberIds={} error={} message={}",
-                    postId, selectedMemberIds, ex.getClass().getSimpleName(), ex.getMessage(), ex);
+            log.error("[채팅방개설] Controller 예외 postId={} error={} message={}",
+                    postId, ex.getClass().getSimpleName(), ex.getMessage());
             throw ex;
         }
     }
