@@ -51,6 +51,8 @@ public class PostResponseDto {
         private String authorNickname;
         private LocalDateTime createdAt;
         private boolean isAnonymous;
+        /** 댓글 작성자의 분반명 (익명이면 null) */
+        private String roomName;
     }
 
     @Getter @Builder
@@ -59,6 +61,8 @@ public class PostResponseDto {
         private String nickname;
         private boolean isAnonymous;
         private String imageUrl;
+        /** 글쓴이 분반명 */
+        private String roomName;
     }
 
     @Getter @Builder

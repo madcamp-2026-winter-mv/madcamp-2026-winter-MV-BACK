@@ -115,21 +115,28 @@ public class PostService {
 
         //댓글 목록 빌드 시 memberId, isAnonymous 포함
         List<PostResponseDto.CommentResponseDto> comments = post.getComments().stream()
-                .map(comment -> PostResponseDto.CommentResponseDto.builder()
-                        .commentId(comment.getCommentId())
-                        .memberId(comment.getMember().getMemberId())
-                        .content(comment.getContent())
-                        .authorNickname(comment.isAnonymous() ? "익명" : (comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음"))
-                        .createdAt(comment.getCreatedAt())
-                        .isAnonymous(comment.isAnonymous())
-                        .build())
+                .map(comment -> {
+                    String cRoom = (comment.isAnonymous() || comment.getMember() == null || comment.getMember().getRoom() == null)
+                            ? null : comment.getMember().getRoom().getName();
+                    return PostResponseDto.CommentResponseDto.builder()
+                            .commentId(comment.getCommentId())
+                            .memberId(comment.getMember().getMemberId())
+                            .content(comment.getContent())
+                            .authorNickname(comment.isAnonymous() ? "익명" : (comment.getMember() != null ? comment.getMember().getNickname() : "알 수 없음"))
+                            .createdAt(comment.getCreatedAt())
+                            .isAnonymous(comment.isAnonymous())
+                            .roomName(cRoom)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
+        String authorRoom = (post.getMember() == null || post.getMember().getRoom() == null) ? null : post.getMember().getRoom().getName();
         String authorNickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(authorNickname)
                 .isAnonymous(post.isAnonymous())
                 .imageUrl(null)
+                .roomName(authorRoom)
                 .build();
 
         PostResponseDto.PartyInfoDto partyInfoDto = null;
@@ -175,10 +182,12 @@ public class PostService {
         }
 
         String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        String aRoom = (post.getMember() == null || post.getMember().getRoom() == null) ? null : post.getMember().getRoom().getName();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(nickname)
                 .isAnonymous(post.isAnonymous())
                 .imageUrl(null)
+                .roomName(aRoom)
                 .build();
 
         PostResponseDto.PartyInfoDto partyInfoDto = null;
@@ -295,10 +304,12 @@ public class PostService {
 
         // 작성자 객체 생성
         String nickname = post.isAnonymous() ? "익명" : post.getMember().getNickname();
+        String aRoom = (post.getMember() == null || post.getMember().getRoom() == null) ? null : post.getMember().getRoom().getName();
         PostResponseDto.AuthorDto authorDto = PostResponseDto.AuthorDto.builder()
                 .nickname(nickname)
                 .isAnonymous(post.isAnonymous())
                 .imageUrl(null)
+                .roomName(aRoom)
                 .build();
 
         // 팟모집 정보 객체 생성 (타입이 PARTY일 때만)
