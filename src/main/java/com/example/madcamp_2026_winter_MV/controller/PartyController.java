@@ -3,6 +3,8 @@ package com.example.madcamp_2026_winter_MV.controller;
 import com.example.madcamp_2026_winter_MV.dto.ChatMessageDto;
 import com.example.madcamp_2026_winter_MV.service.PartyService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/party")
 public class PartyController {
 
+    private static final Logger log = LoggerFactory.getLogger(PartyController.class);
     private final PartyService partyService;
     private final SimpMessagingTemplate messagingTemplate;
     /** 댓글 작성자를 임시 참가자로 토글. body: { "memberId": number }. 중복 미허용. */
@@ -37,8 +40,23 @@ public class PartyController {
             @PathVariable Long postId,
             @RequestBody List<Long> selectedMemberIds,
             @AuthenticationPrincipal OAuth2User principal) {
-        String email = principal.getAttribute("email");
-        return ResponseEntity.ok(partyService.confirmAndCreateChat(postId, selectedMemberIds, email));
+        int size = (selectedMemberIds != null) ? selectedMemberIds.size() : -1;
+        String email = (principal != null) ? String.valueOf(principal.getAttribute("email")) : "null";
+        log.info("[채팅방개설] Controller 진입 postId={} selectedMemberIds.size={} selectedMemberIds={} email={}",
+                postId, size, selectedMemberIds, (email != null && email.length() > 2) ? email.substring(0, 2) + "***" : email);
+        try {
+            String e = principal != null ? (String) principal.getAttribute("email") : null;
+            if (e == null) {
+                log.warn("[채팅방개설] principal 또는 email 없음");
+            }
+            Long chatRoomId = partyService.confirmAndCreateChat(postId, selectedMemberIds, e);
+            log.info("[채팅방개설] Controller 성공 postId={} chatRoomId={}", postId, chatRoomId);
+            return ResponseEntity.ok(chatRoomId);
+        } catch (Exception ex) {
+            log.error("[채팅방개설] Controller 예외 postId={} selectedMemberIds={} error={} message={}",
+                    postId, selectedMemberIds, ex.getClass().getSimpleName(), ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     // 멤버 퇴장/강퇴 시 닉네임 포함 알림

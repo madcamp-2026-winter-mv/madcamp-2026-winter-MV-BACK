@@ -5,6 +5,8 @@ import com.example.madcamp_2026_winter_MV.dto.ChatRoomResponseDto;
 import com.example.madcamp_2026_winter_MV.entity.*;
 import com.example.madcamp_2026_winter_MV.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class PartyService {
 
+    private static final Logger log = LoggerFactory.getLogger(PartyService.class);
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -28,54 +31,81 @@ public class PartyService {
     //  1. 팟 확정 및 채팅방 생성 (수정: ChatMember 저장 로직 추가)
     @Transactional
     public Long confirmAndCreateChat(Long postId, List<Long> selectedMemberIds, String ownerEmail) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
-        Member owner = memberRepository.findByEmail(ownerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        log.info("[채팅방개설] Service 시작 postId={} selectedMemberIds={} ownerEmail={}",
+                postId, selectedMemberIds, (ownerEmail != null && ownerEmail.length() > 2) ? ownerEmail.substring(0, 2) + "***" : ownerEmail);
+        try {
+            if (selectedMemberIds == null) {
+                log.warn("[채팅방개설] selectedMemberIds==null");
+            }
+            Post post = postRepository.findById(postId)
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+            log.info("[채팅방개설] Post 조회 OK postId={} type={} maxParticipants={} getMember==null?{}",
+                    postId, post.getType(), post.getMaxParticipants(), (post.getMember() == null));
 
-        if (post.getType() != PostType.PARTY) {
-            throw new IllegalStateException("팟 모집 전용 게시글이 아닙니다.");
+            Member owner = memberRepository.findByEmail(ownerEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+            log.info("[채팅방개설] Owner 조회 OK ownerId={}", owner.getMemberId());
+
+            if (post.getType() != PostType.PARTY) {
+                log.warn("[채팅방개설] 검증 실패: type != PARTY");
+                throw new IllegalStateException("팟 모집 전용 게시글이 아닙니다.");
+            }
+
+            if (post.getMember() == null || !post.getMember().getMemberId().equals(owner.getMemberId())) {
+                log.warn("[채팅방개설] 검증 실패: 작성자 불일치");
+                throw new IllegalStateException("작성자만 팟을 확정할 수 있습니다.");
+            }
+
+            int max = (post.getMaxParticipants() != null) ? post.getMaxParticipants() : 0;
+            int totalPartyMembers = (selectedMemberIds != null ? selectedMemberIds.size() : 0) + 1;
+            log.info("[채팅방개설] 인원 검증 max={} totalPartyMembers={}", max, totalPartyMembers);
+            if (max > 0 && totalPartyMembers > max) {
+                log.warn("[채팅방개설] 검증 실패: 인원 초과");
+                throw new IllegalArgumentException("최대 모집 인원을 초과할 수 없습니다.");
+            }
+
+            post.setClosed(true);
+            post.setCurrentParticipants(totalPartyMembers);
+            log.info("[채팅방개설] Post 상태 갱신 setClosed=true currentParticipants={}", totalPartyMembers);
+
+            ChatRoom chatRoom = ChatRoom.builder()
+                    .roomName(post.getTitle())
+                    .postId(postId)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
+            log.info("[채팅방개설] ChatRoom 저장 OK chatRoomId={} roomName={}", savedRoom.getChatRoomId(), savedRoom.getRoomName());
+
+            saveChatMember(savedRoom, owner); // 방장 등록
+            log.info("[채팅방개설] 방장 등록 OK");
+
+            List<Long> ids = (selectedMemberIds != null) ? selectedMemberIds : java.util.Collections.emptyList();
+            for (Long mId : ids) {
+                Member m = memberRepository.findById(mId)
+                        .orElseThrow(() -> new IllegalArgumentException("참가자 ID " + mId + "를 찾을 수 없습니다."));
+                saveChatMember(savedRoom, m);
+                log.info("[채팅방개설] 멤버 등록 OK mId={}", mId);
+            }
+
+            ChatMessage welcomeMessage = ChatMessage.builder()
+                    .chatRoom(savedRoom)
+                    .senderNickname("몰입캠프 ")
+                    .content("'" + post.getTitle() + "'에서 채팅방이 시작되었습니다. 대화를 시작해보세요!")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            chatMessageRepository.save(welcomeMessage);
+            log.info("[채팅방개설] 환영 메시지 저장 OK");
+
+            postTempParticipantRepository.deleteByPost_PostId(postId);
+            log.info("[채팅방개설] 임시참가자 삭제 OK postId={}", postId);
+
+            log.info("[채팅방개설] Service 완료 chatRoomId={}", savedRoom.getChatRoomId());
+            return savedRoom.getChatRoomId();
+        } catch (Exception ex) {
+            log.error("[채팅방개설] Service 예외 postId={} selectedMemberIds={} ex={} message={}",
+                    postId, selectedMemberIds, ex.getClass().getName(), ex.getMessage(), ex);
+            throw ex;
         }
-
-        if (!post.getMember().getMemberId().equals(owner.getMemberId())) {
-            throw new IllegalStateException("작성자만 팟을 확정할 수 있습니다.");
-        }
-
-        int totalPartyMembers = selectedMemberIds.size() + 1;
-        if (totalPartyMembers > post.getMaxParticipants()) {
-            throw new IllegalArgumentException("최대 모집 인원을 초과할 수 없습니다.");
-        }
-
-        post.setClosed(true);
-        post.setCurrentParticipants(totalPartyMembers);
-
-        ChatRoom chatRoom = ChatRoom.builder()
-                .roomName(post.getTitle())
-                .postId(postId)
-                .createdAt(LocalDateTime.now())
-                .build();
-        ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
-
-        // 작성자와 선택된 멤버들을 채팅방 참여자로 등록
-        saveChatMember(savedRoom, owner); // 방장 등록
-        for (Long mId : selectedMemberIds) {
-            Member m = memberRepository.findById(mId).orElseThrow();
-            saveChatMember(savedRoom, m); // 멤버 등록
-        }
-
-        // 시스템 환영 메시지 자동 저장
-        ChatMessage welcomeMessage = ChatMessage.builder()
-                .chatRoom(savedRoom)
-                .senderNickname("몰입캠프 ")
-                .content("'" + post.getTitle() + "'에서 채팅방이 시작되었습니다. 대화를 시작해보세요!")
-                .timestamp(LocalDateTime.now())
-                .build();
-        chatMessageRepository.save(welcomeMessage);
-
-        // 임시 참가자 목록 삭제 (모집 완료 후 불필요)
-        postTempParticipantRepository.deleteByPost_PostId(postId);
-
-        return savedRoom.getChatRoomId();
     }
 
     /** 팟 작성자가 댓글 작성자를 임시 참가자로 토글. 중복 미허용. 댓글 작성자만 추가 가능. */
