@@ -85,3 +85,17 @@
 | Service | `PartyService.java` | `saveSystemMessage`, `leaveParty` 반환 타입 및 퇴장 문구 분리, `getChatMessages` 몰입캠프 프로필, `getMyChatRooms` 개설자 이미지 |
 | Controller | `PartyController.java` | `leaveOrKickMember`·`addMember` 시스템 메시지 DB 저장 및 몰입캠프 WebSocket DTO |
 | Controller | `RoomController.java` | `getCurrentPresenter`에 `presenterProfileImageUrl` |
+
+---
+
+## 6. [추가] 채팅방-게시글 오류 수정
+
+### 6.1 모집 완료 글 삭제 가능 (`PostService.deletePost`)
+- **문제**: 모집 완료 후 생성된 `ChatRoom`이 `post_id`(UNIQUE)로 `Post`를 참조해, 글 삭제 시 "데이터 중복 또는 제약 조건 위반" 발생.
+- **수정**: `deletePost`에서 `postRepository.delete(post)` **전에** `chatRoomRepository.findByPostId(postId).ifPresent(chatRoomRepository::delete)` 호출.
+- `ChatRoom` 삭제 시 `ChatMember`, `ChatMessage`는 `cascade=ALL`로 함께 삭제됨.
+
+### 6.2 탈퇴/강퇴 시 모집완료 유지 (`PartyService.leaveParty`)
+- **문제**: 채팅방에서 멤버 탈퇴/강퇴 시 `currentParticipants < maxParticipants`인 경우 `post.setClosed(false)`로 돌려, 모집완료 글이 다시 "모집중"으로 바뀜.
+- **수정**: `if (post.getCurrentParticipants() < post.getMaxParticipants()) { post.setClosed(false); }` 블록 **제거**.
+- 채팅방이 한 번 생성된 글은 인원이 줄어도 **모집 완료 상태 유지**. 같은 글로 채팅방이 다시 생성되지는 않음 (`existsByPostId` 체크 유지).

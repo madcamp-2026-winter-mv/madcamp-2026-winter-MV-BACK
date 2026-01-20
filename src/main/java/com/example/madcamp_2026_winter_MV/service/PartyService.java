@@ -265,9 +265,7 @@ public class PartyService {
         chatMemberRepository.deleteByChatRoomAndMember(room, target);
 
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
-        if (post.getCurrentParticipants() < post.getMaxParticipants()) {
-            post.setClosed(false);
-        }
+        // 채팅방이 한 번 생성된 글은 모집 완료 상태 유지. 인원 감소해도 다시 모집중으로 되돌리지 않음.
 
         return new LeaveOrKickResult(target.getNickname(), kicked);
     }

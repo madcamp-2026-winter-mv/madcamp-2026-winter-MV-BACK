@@ -241,6 +241,8 @@ public class PostService {
     public void deletePost(Long postId, String email) {
         Post post = postRepository.findById(postId).orElseThrow();
         if (!post.getMember().getEmail().equals(email)) throw new RuntimeException("권한이 없습니다.");
+        // 모집 완료 후 생성된 채팅방이 있으면 선삭제 (Post FK/unique 제약으로 인한 삭제 불가 방지)
+        chatRoomRepository.findByPostId(postId).ifPresent(chatRoomRepository::delete);
         postRepository.delete(post);
     }
 
