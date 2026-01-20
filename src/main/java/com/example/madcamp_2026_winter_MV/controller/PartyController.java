@@ -38,28 +38,25 @@ public class PartyController {
     @PostMapping("/{postId}/confirm")
     public ResponseEntity<Long> confirmParty(
             @PathVariable Long postId,
-            @RequestBody java.util.Map<String, Object> body,
+            @RequestBody List<Object> rawMemberIds, // List로 직접 받음
             @AuthenticationPrincipal OAuth2User principal) {
 
-        // 1. JSON에서 리스트 꺼내기
-        Object listObj = body.get("selectedMemberIds");
+        // 1. 전달받은 리스트를 Long 타입으로 변환 (숫자 타입 불일치 방지)
         List<Long> selectedMemberIds = new java.util.ArrayList<>();
-
-        if (listObj instanceof List<?>) {
-            for (Object item : (List<?>) listObj) {
-                selectedMemberIds.add(Long.valueOf(item.toString()));
+        if (rawMemberIds != null) {
+            for (Object id : rawMemberIds) {
+                selectedMemberIds.add(Long.valueOf(id.toString()));
             }
         }
 
         int size = selectedMemberIds.size();
-        String email = (principal != null) ? String.valueOf(principal.getAttribute("email")) : "null";
+        String email = (principal != null) ? (String) principal.getAttribute("email") : null;
 
         log.info("[채팅방개설] Controller 진입 postId={} selectedMemberIds.size={} selectedMemberIds={} email={}",
                 postId, size, selectedMemberIds, (email != null && email.length() > 2) ? email.substring(0, 2) + "***" : email);
 
         try {
-            String e = (principal != null) ? (String) principal.getAttribute("email") : null;
-            Long chatRoomId = partyService.confirmAndCreateChat(postId, selectedMemberIds, e);
+            Long chatRoomId = partyService.confirmAndCreateChat(postId, selectedMemberIds, email);
             log.info("[채팅방개설] Controller 성공 postId={} chatRoomId={}", postId, chatRoomId);
             return ResponseEntity.ok(chatRoomId);
         } catch (Exception ex) {
