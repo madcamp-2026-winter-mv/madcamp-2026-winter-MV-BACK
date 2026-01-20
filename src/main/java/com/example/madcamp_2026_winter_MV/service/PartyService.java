@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,8 @@ public class PartyService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final PostTempParticipantRepository postTempParticipantRepository;
+    private final CommentRepository commentRepository;
 
     //  1. 팟 확정 및 채팅방 생성 (수정: ChatMember 저장 로직 추가)
     @Transactional
@@ -70,7 +73,46 @@ public class PartyService {
                 .build();
         chatMessageRepository.save(welcomeMessage);
 
+        // 임시 참가자 목록 삭제 (모집 완료 후 불필요)
+        postTempParticipantRepository.deleteByPost_PostId(postId);
+
         return savedRoom.getChatRoomId();
+    }
+
+    /** 팟 작성자가 댓글 작성자를 임시 참가자로 토글. 중복 미허용. 댓글 작성자만 추가 가능. */
+    @Transactional
+    public java.util.List<Long> toggleTempParticipant(Long postId, Long memberId, String authorEmail) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+        Member author = memberRepository.findByEmail(authorEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (post.getType() != PostType.PARTY) {
+            throw new IllegalStateException("팟 모집 게시글이 아닙니다.");
+        }
+        if (!post.getMember().getMemberId().equals(author.getMemberId())) {
+            throw new IllegalStateException("작성자만 참가자를 선택할 수 있습니다.");
+        }
+        if (post.getMember().getMemberId().equals(memberId)) {
+            throw new IllegalArgumentException("작성자는 이미 참가자입니다.");
+        }
+        if (!commentRepository.existsByPost_PostIdAndMember_MemberId(postId, memberId)) {
+            throw new IllegalArgumentException("해당 글에 댓글을 단 사용자만 참가자로 선택할 수 있습니다.");
+        }
+
+        java.util.Optional<PostTempParticipant> existing = postTempParticipantRepository.findByPost_PostIdAndMember_MemberId(postId, memberId);
+        if (existing.isPresent()) {
+            postTempParticipantRepository.delete(existing.get());
+        } else {
+            int max = post.getMaxParticipants() != null ? post.getMaxParticipants() : 0;
+            long current = postTempParticipantRepository.findByPost_PostId(postId).size();
+            if (current + 1 + 1 > max) { // 작성자 1 + 현재 임시 + 추가 1
+                throw new IllegalStateException("최대 모집 인원을 초과할 수 없습니다.");
+            }
+            Member toAdd = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
+            postTempParticipantRepository.save(PostTempParticipant.builder().post(post).member(toAdd).build());
+        }
+        return postTempParticipantRepository.findByPost_PostId(postId).stream()
+                .map(pp -> pp.getMember().getMemberId())
+                .collect(Collectors.toList());
     }
 
     //  2. 실시간 메시지 DB 저장

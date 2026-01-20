@@ -42,6 +42,9 @@ public class PostResponseDto {
     // 4. 팟모집 정보 객체
     private PartyInfoDto partyInfo;
 
+    /** 팟 작성자일 때만 존재. 해당 글의 임시 참가자(선택된 댓글 작성자) memberId 목록. */
+    private List<Long> tempParticipantIds;
+
     @Getter @Builder
     @NoArgsConstructor @AllArgsConstructor
     public static class CommentResponseDto {
@@ -51,8 +54,8 @@ public class PostResponseDto {
         private String authorNickname;
         private LocalDateTime createdAt;
         private boolean isAnonymous;
-        /** 댓글 작성자의 분반명 (익명이면 null) */
-        private String roomName;
+        /** 댓글 작성자 분반 ID (익명이면 null, 표시 시 "{roomId} 분반") */
+        private Long roomId;
     }
 
     @Getter @Builder
@@ -61,8 +64,8 @@ public class PostResponseDto {
         private String nickname;
         private boolean isAnonymous;
         private String imageUrl;
-        /** 글쓴이 분반명 */
-        private String roomName;
+        /** 글쓴이 분반 ID (익명이면 null, 표시 시 "{roomId} 분반") */
+        private Long roomId;
     }
 
     @Getter @Builder

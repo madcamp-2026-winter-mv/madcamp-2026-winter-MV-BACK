@@ -21,4 +21,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 3. 내가 댓글을 단 목록 조회
     List<Comment> findByMember(Member member);
+
+    boolean existsByPost_PostIdAndMember_MemberId(Long postId, Long memberId);
 }

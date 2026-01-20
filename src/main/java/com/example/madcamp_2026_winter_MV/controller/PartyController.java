@@ -18,6 +18,19 @@ public class PartyController {
 
     private final PartyService partyService;
     private final SimpMessagingTemplate messagingTemplate;
+    /** 댓글 작성자를 임시 참가자로 토글. body: { "memberId": number }. 중복 미허용. */
+    @PostMapping("/{postId}/temp-participants/toggle")
+    public ResponseEntity<List<Long>> toggleTempParticipant(
+            @PathVariable Long postId,
+            @RequestBody java.util.Map<String, Object> body,
+            @AuthenticationPrincipal OAuth2User principal) {
+        Object m = body.get("memberId");
+        if (m == null) throw new IllegalArgumentException("memberId가 필요합니다.");
+        Long memberId = m instanceof Number ? ((Number) m).longValue() : Long.parseLong(m.toString());
+        String email = principal.getAttribute("email");
+        return ResponseEntity.ok(partyService.toggleTempParticipant(postId, memberId, email));
+    }
+
     // 팟 확정 및 채팅방 생성
     @PostMapping("/{postId}/confirm")
     public ResponseEntity<Long> confirmParty(
