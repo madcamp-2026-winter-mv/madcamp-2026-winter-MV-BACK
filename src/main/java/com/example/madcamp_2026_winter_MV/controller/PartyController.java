@@ -1,5 +1,6 @@
 package com.example.madcamp_2026_winter_MV.controller;
 
+import com.example.madcamp_2026_winter_MV.dto.ChatMemberResponseDto;
 import com.example.madcamp_2026_winter_MV.dto.ChatMessageDto;
 import com.example.madcamp_2026_winter_MV.service.PartyService;
 import lombok.RequiredArgsConstructor;
@@ -108,6 +109,19 @@ public class PartyController {
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId, enterMsg);
 
         return ResponseEntity.ok().build();
+    }
+
+    // 채팅방 멤버 목록 조회 (참가자만 가능, isOwner 포함)
+    @GetMapping("/rooms/{chatRoomId}/members")
+    public ResponseEntity<List<ChatMemberResponseDto>> getChatRoomMembers(
+            @PathVariable Long chatRoomId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        if (principal == null) return ResponseEntity.status(401).build();
+
+        String email = principal.getAttribute("email");
+        List<ChatMemberResponseDto> members = partyService.getChatRoomMembers(chatRoomId, email);
+        return ResponseEntity.ok(members);
     }
 
     // 채팅방 입장 시 읽음 시간 업데이트 (미읽음 카운트 0 처리용)

@@ -1,5 +1,6 @@
 package com.example.madcamp_2026_winter_MV.service;
 
+import com.example.madcamp_2026_winter_MV.dto.ChatMemberResponseDto;
 import com.example.madcamp_2026_winter_MV.dto.ChatMessageDto;
 import com.example.madcamp_2026_winter_MV.dto.ChatRoomResponseDto;
 import com.example.madcamp_2026_winter_MV.entity.*;
@@ -308,6 +309,36 @@ public class PartyService {
                 })
                 .collect(Collectors.toList());
     }
+    // 7-2. 채팅방 멤버 목록 조회 (참가자만 가능, 각 멤버의 isOwner 포함)
+    public List<ChatMemberResponseDto> getChatRoomMembers(Long chatRoomId, String email) {
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        Member requester = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (!chatMemberRepository.existsByChatRoomAndMember(room, requester)) {
+            throw new IllegalStateException("참여 중인 채팅방만 멤버 목록을 조회할 수 있습니다.");
+        }
+
+        Post post = postRepository.findById(room.getPostId())
+                .orElseThrow(() -> new IllegalArgumentException("연관된 게시글을 찾을 수 없습니다."));
+        Long ownerMemberId = post.getMember() != null ? post.getMember().getMemberId() : null;
+
+        return chatMemberRepository.findByChatRoom(room).stream()
+                .filter(cm -> cm.getMember() != null)
+                .map(cm -> {
+                    Member m = cm.getMember();
+                    boolean isOwner = ownerMemberId != null && ownerMemberId.equals(m.getMemberId());
+                    return ChatMemberResponseDto.builder()
+                            .memberId(m.getMemberId())
+                            .nickname(m.getNickname())
+                            .profileImage(m.getProfileImage())
+                            .owner(isOwner)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
     // 8. 채팅방 삭제 (방장 전용) - 게시글 상태 변경 없음
     @Transactional
     public void deleteChatRoom(Long chatRoomId, String email) {

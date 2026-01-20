@@ -64,7 +64,19 @@ public class AdminController {
 
         roomService.addSchedule(roomId, dto);
         return ResponseEntity.ok("오늘의 일정이 등록되었습니다.");
-}
+    }
+
+    // 5-2. 일정 삭제 (관리자 전용)
+    @DeleteMapping("/rooms/{roomId}/schedules/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(
+            @PathVariable Long roomId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal OAuth2User principal) {
+
+        roomService.deleteSchedule(roomId, scheduleId);
+        return ResponseEntity.noContent().build();
+    }
+
     // 6. 멤버 강퇴 기능
     @DeleteMapping("/rooms/{roomId}/members/{targetMemberId}")
     public ResponseEntity<String> kickMember(

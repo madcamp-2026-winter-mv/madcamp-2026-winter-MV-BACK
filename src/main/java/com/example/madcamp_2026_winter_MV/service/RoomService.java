@@ -198,6 +198,19 @@ public class RoomService {
         return scheduleRepository.findByRoom_RoomIdOrderByStartTimeAsc(roomId);
     }
 
+    // 관리자가 일정을 삭제하는 로직
+    @Transactional
+    public void deleteSchedule(Long roomId, Long scheduleId) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 일정을 찾을 수 없습니다."));
+
+        if (schedule.getRoom() == null || !schedule.getRoom().getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("해당 분반의 일정이 아닙니다.");
+        }
+
+        scheduleRepository.delete(schedule);
+    }
+
     // 멤버 강퇴 로직-소속 분반 아이디(Room)를 제거
     @Transactional
     public void kickMember(Long roomId, Long targetMemberId) {
