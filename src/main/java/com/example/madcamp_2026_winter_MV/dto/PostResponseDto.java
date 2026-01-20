@@ -1,6 +1,7 @@
 package com.example.madcamp_2026_winter_MV.dto;
 
 import com.example.madcamp_2026_winter_MV.entity.PostType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,8 @@ public class PostResponseDto {
     private int likeCount;
     private boolean isLiked;
 
+    /** 이메일 기준 작성자 여부(익명 글도 본인에게 수정/삭제 노출). Jackson이 isAuthor()를 "author"로 직렬화해 author 객체와 충돌하므로 명시. */
+    @JsonProperty("isAuthor")
     private boolean isAuthor;
 
     private Integer commentCount;
@@ -58,7 +61,8 @@ public class PostResponseDto {
         private Long roomId;
         /** 댓글 작성자 프로필 이미지 (익명이면 null) */
         private String imageUrl;
-        /** 현재 로그인 사용자가 댓글 작성자인지 (이메일 기준, 익명 댓글도 수정/삭제 가능) */
+        /** 현재 로그인 사용자가 댓글 작성자인지 (이메일 기준, 익명 댓글도 수정/삭제 가능). Jackson이 isMine()를 "mine"으로 직렬화할 수 있어 명시. */
+        @JsonProperty("isMine")
         private boolean isMine;
     }
 
