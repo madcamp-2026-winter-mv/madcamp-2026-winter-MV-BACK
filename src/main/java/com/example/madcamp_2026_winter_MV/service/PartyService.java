@@ -211,11 +211,17 @@ public class PartyService {
         return chatMemberRepository.findByMember(member).stream()
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
+                    String postTitle = postRepository.findById(room.getPostId())
+                            .map(Post::getTitle)
+                            .orElse("게시글 #" + room.getPostId());
+                    int participantCount = (int) chatMemberRepository.countByChatRoom(room);
                     return ChatRoomResponseDto.builder()
                             .chatRoomId(room.getChatRoomId())
                             .roomName(room.getRoomName())
                             .postId(room.getPostId())
+                            .postTitle(postTitle)
                             .createdAt(room.getCreatedAt().toString())
+                            .participantCount(participantCount)
                             .build();
                 })
                 .collect(Collectors.toList());

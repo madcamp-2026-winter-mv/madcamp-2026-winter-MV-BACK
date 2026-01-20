@@ -7,5 +7,7 @@ public class ChatRoomResponseDto {
     private Long chatRoomId;
     private String roomName;
     private Long postId;
+    private String postTitle;
     private String createdAt;
+    private Integer participantCount;
 }
