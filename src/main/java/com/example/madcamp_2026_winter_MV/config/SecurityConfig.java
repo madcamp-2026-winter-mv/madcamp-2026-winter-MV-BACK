@@ -65,6 +65,7 @@ public class SecurityConfig {
                 "https://madcamp-view.com",
                 "https://www.madcamp-view.com",
                 "http://madcamp-view.com",
+                "https://api.madcamp-view.com",
                 "http://localhost:3000",
                 "http://localhost:8080",
                 "https://madcamp-2026-winter-mv-front.vercel.app"

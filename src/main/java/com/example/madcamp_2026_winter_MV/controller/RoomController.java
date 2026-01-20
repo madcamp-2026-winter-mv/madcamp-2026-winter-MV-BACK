@@ -5,6 +5,7 @@ import com.example.madcamp_2026_winter_MV.entity.Role;
 import com.example.madcamp_2026_winter_MV.entity.Room;
 import com.example.madcamp_2026_winter_MV.entity.Schedule;
 import com.example.madcamp_2026_winter_MV.repository.MemberRepository;
+import com.example.madcamp_2026_winter_MV.repository.RoomRepository;
 import com.example.madcamp_2026_winter_MV.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ public class RoomController {
 
     private final RoomService roomService;
     private final MemberRepository memberRepository;
+    private final RoomRepository roomRepository;
 
     // 분반 입장 (초대코드 활용)
     @PostMapping("/join")
@@ -115,5 +117,27 @@ public class RoomController {
 
         List<Schedule> schedules = roomService.getSchedules(roomId);
         return ResponseEntity.ok(schedules);
+    }
+
+    // 현재 발표자 정보 조회 API
+    @GetMapping("/{roomId}/presenter")
+    public ResponseEntity<?> getCurrentPresenter(@PathVariable Long roomId) {
+        // 1. 분반 조회
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("분반을 찾을 수 없습니다."));
+
+        // 2. 현재 발표자 ID로 멤버 정보 조회
+        if (room.getCurrentPresenterId() == null) {
+            return ResponseEntity.ok(Map.of("message", "현재 선정된 발표자가 없습니다."));
+        }
+
+        Member presenter = memberRepository.findById(room.getCurrentPresenterId())
+                .orElseThrow(() -> new IllegalArgumentException("발표자 정보를 찾을 수 없습니다."));
+
+        // 3. 닉네임 등 필요한 정보 반환
+        return ResponseEntity.ok(Map.of(
+                "presenterNickname", presenter.getNickname(),
+                "presenterEmail", presenter.getEmail()
+        ));
     }
 }
