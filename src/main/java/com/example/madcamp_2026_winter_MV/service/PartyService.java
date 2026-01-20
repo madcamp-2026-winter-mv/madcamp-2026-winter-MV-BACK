@@ -3,6 +3,7 @@ package com.example.madcamp_2026_winter_MV.service;
 import com.example.madcamp_2026_winter_MV.dto.ChatMemberResponseDto;
 import com.example.madcamp_2026_winter_MV.dto.ChatMessageDto;
 import com.example.madcamp_2026_winter_MV.dto.ChatRoomResponseDto;
+import com.example.madcamp_2026_winter_MV.dto.LeaveOrKickResult;
 import com.example.madcamp_2026_winter_MV.entity.*;
 import com.example.madcamp_2026_winter_MV.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -152,6 +153,20 @@ public class PartyService {
                 .collect(Collectors.toList());
     }
 
+    /** 시스템(몰입캠프) 공지 메시지 DB 저장 - 새로고침 후에도 유지 */
+    @Transactional
+    public void saveSystemMessage(Long chatRoomId, String senderNickname, String content) {
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        ChatMessage message = ChatMessage.builder()
+                .chatRoom(room)
+                .senderNickname(senderNickname)
+                .content(content)
+                .timestamp(LocalDateTime.now())
+                .build();
+        chatMessageRepository.save(message);
+    }
+
     // 2. 실시간 메시지 DB 저장
     @Transactional
     public void saveMessage(ChatMessageDto dto) {
@@ -179,11 +194,17 @@ public class PartyService {
         return chatMessageRepository.findByChatRoom_ChatRoomIdOrderByTimestampAsc(chatRoomId)
                 .stream()
                 .map(m -> {
-                    String img = nicknameToImage.get(m.getSenderNickname());
+                    String img;
+                    if ("몰입캠프".equals(m.getSenderNickname())) {
+                        img = "/madcamp_logo.png"; // 시스템(몰입캠프) 고정 프로필
+                    } else {
+                        img = nicknameToImage.get(m.getSenderNickname());
+                        img = (img != null && !img.isEmpty()) ? img : null;
+                    }
                     return ChatMessageDto.builder()
                             .chatRoomId(chatRoomId)
                             .senderNickname(m.getSenderNickname())
-                            .senderProfileImageUrl((img != null && !img.isEmpty()) ? img : null)
+                            .senderProfileImageUrl(img)
                             .content(m.getContent())
                             .timestamp(m.getTimestamp().toString())
                             .build();
@@ -224,9 +245,9 @@ public class PartyService {
         return newMember.getNickname();
     }
 
-    // 5. 팟 멤버 내보내기
+    // 5. 팟 멤버 내보내기 (탈퇴/강퇴 구분)
     @Transactional
-    public String leaveParty(Long chatRoomId, Long targetMemberId, String requestUserEmail) {
+    public LeaveOrKickResult leaveParty(Long chatRoomId, Long targetMemberId, String requestUserEmail) {
         ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow();
         Member target = memberRepository.findById(targetMemberId).orElseThrow();
         Member requestUser = memberRepository.findByEmail(requestUserEmail).orElseThrow();
@@ -239,6 +260,8 @@ public class PartyService {
             throw new IllegalStateException("권한이 없습니다.");
         }
 
+        boolean kicked = isOwner && !isSelf;
+
         chatMemberRepository.deleteByChatRoomAndMember(room, target);
 
         post.setCurrentParticipants((int) chatMemberRepository.countByChatRoom(room));
@@ -246,7 +269,7 @@ public class PartyService {
             post.setClosed(false);
         }
 
-        return target.getNickname();
+        return new LeaveOrKickResult(target.getNickname(), kicked);
     }
 
     private void saveChatMember(ChatRoom room, Member member) {
@@ -287,9 +310,10 @@ public class PartyService {
                 .sorted((a, b) -> b.getChatRoom().getCreatedAt().compareTo(a.getChatRoom().getCreatedAt()))
                 .map(cm -> {
                     ChatRoom room = cm.getChatRoom();
-                    String postTitle = postRepository.findById(room.getPostId())
-                            .map(Post::getTitle)
-                            .orElse("게시글 #" + room.getPostId());
+                    Post post = postRepository.findById(room.getPostId()).orElse(null);
+                    String postTitle = post != null ? post.getTitle() : ("게시글 #" + room.getPostId());
+                    String creatorProfileImageUrl = (post != null && post.getMember() != null && post.getMember().getProfileImage() != null && !post.getMember().getProfileImage().isEmpty())
+                            ? post.getMember().getProfileImage() : null;
 
                     int participantCount = (int) chatMemberRepository.countByChatRoom(room);
 
@@ -302,9 +326,10 @@ public class PartyService {
                             .roomName(room.getRoomName())
                             .postId(room.getPostId())
                             .postTitle(postTitle)
+                            .creatorProfileImageUrl(creatorProfileImageUrl)
                             .createdAt(room.getCreatedAt().toString())
                             .participantCount(participantCount)
-                            .unreadCount((int) unreadCount) // DTO에 필드 추가 필요
+                            .unreadCount((int) unreadCount)
                             .build();
                 })
                 .collect(Collectors.toList());

@@ -134,10 +134,11 @@ public class RoomController {
         Member presenter = memberRepository.findById(room.getCurrentPresenterId())
                 .orElseThrow(() -> new IllegalArgumentException("발표자 정보를 찾을 수 없습니다."));
 
-        // 3. 닉네임 등 필요한 정보 반환
+        // 3. 닉네임, 프로필 이미지 등 반환
         return ResponseEntity.ok(Map.of(
                 "presenterNickname", presenter.getNickname(),
-                "presenterEmail", presenter.getEmail()
+                "presenterEmail", presenter.getEmail(),
+                "presenterProfileImageUrl", presenter.getProfileImage() != null ? presenter.getProfileImage() : ""
         ));
     }
 }
