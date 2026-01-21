@@ -39,6 +39,7 @@ public class Room {
     @Builder.Default
     private List<Member> members = new ArrayList<>();
 
+    private LocalDateTime attendanceStartTime;
     private LocalDateTime attendanceEndTime; // 출석 마감 시간
 
     @Builder.Default
@@ -68,12 +69,14 @@ public class Room {
     // 출석 시작 (마감 시간 설정)
     public void startAttendance(int minutes) {
         this.isAttendanceActive = true;
-        this.attendanceEndTime = LocalDateTime.now().plusMinutes(minutes);
+        this.attendanceStartTime = LocalDateTime.now();
+        this.attendanceEndTime = this.attendanceStartTime.plusMinutes(minutes);
     }
 
     // 출석 종료
     public void stopAttendance() {
         this.isAttendanceActive = false;
+        this.attendanceStartTime = null;
         this.attendanceEndTime = null;
     }
 

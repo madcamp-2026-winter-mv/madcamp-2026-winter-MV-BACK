@@ -159,8 +159,9 @@ public class RoomService {
 
         // 2. 중복 출석 체크 로직 추가
         if (member.getLastAttendanceTime() != null &&
-                member.getLastAttendanceTime().toLocalDate().equals(LocalDate.now())) {
-            throw new IllegalStateException("이미 출석 처리가 완료되었습니다.");
+                room.getAttendanceStartTime() != null &&
+                member.getLastAttendanceTime().isAfter(room.getAttendanceStartTime())) {
+            throw new IllegalStateException("이번 출석에 이미 참여하셨습니다.");
         }
 
         // 3. 출석 처리 및 시간 기록
