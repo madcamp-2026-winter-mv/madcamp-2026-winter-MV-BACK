@@ -16,25 +16,29 @@
 
 ## 🛠 2. Tech Stack
 
-### Backend & Security
+### 1. Backend & Security
 
-* **Language:** Java 21
-* **Framework:** Spring Boot 3.x
-* **Persistence:** Spring Data JPA (Hibernate)
-* **Security:** Spring Security & OAuth 2.0 (Google Social Login)
-* **Documentation:** Swagger (OpenAPI 3.0)
+- **Language**: **Java 21**
+- **Framework**: **Spring Boot 3.x**
+- **Persistence**: **Spring Data JPA**
+- **Security**: **Spring Security & OAuth 2.0** (Google Social Login)
+- **Documentation**: **Swagger**
 
-### Database & Infrastructure
+### 2. Database & Infrastructure
 
-* **Database:** MySQL 8.0
-* **Cloud Hosting:** AWS EC2 (Ubuntu 22.04 LTS)
-* **Network:** AWS Route 53, AWS Application Load Balancer (ALB), AWS Certificate Manager (ACM)
-* **Containerization:** Docker & Docker Compose
+- **Database**: **MySQL 8.0**
+- **Cloud Hosting**: **AWS EC2** (Ubuntu 22.04 LTS)
+- **Network & Routing**:
+    - **AWS Route 53**: 도메인 관리 및 DNS 라우팅
+    - **AWS Application Load Balancer (ALB)**: **HTTPS(Port 443)** 리버스 프록시 및 SSL Termination 처리
+    - **AWS Certificate Manager (ACM)**: SSL/TLS 인증서 발급 및 암호화 통신 관리
+- **Containerization**: **Docker & Docker Compose**
 
-### CI/CD & DevOps
+### 3. CI/CD & DevOps
 
-* **Pipeline:** GitHub Actions
-* **Registry:** Amazon ECR (Elastic Container Registry)
+- **CI/CD Pipeline**: **GitHub Actions** (빌드 및 배포 자동화)
+- **Image Registry**: **Amazon ECR (Elastic Container Registry)** (Docker 이미지 관리)
+- **Automation Script**: GitHub Secrets를 활용한 민감 정보(DB ID/PW, API Key) 주입
 
 ---
 
@@ -63,7 +67,7 @@
 <img width="1913" height="899" alt="스크린샷 2026-01-21 151211" src="https://github.com/user-attachments/assets/76cb1579-e473-4160-bb8f-31ce8038ff38" />
 
 - **분반 출석체크**
-    - **출석 위젯:** 운영진이 출석을 활성화하면  ****출석 버튼 노출 (출석시간 내에 한번만 가능)
+    - **출석 위젯:** 운영진이 출석을 활성화하면  출석 버튼 노출 (출석시간 내에 한번만 가능)
 - **일정**
     - 운영진 등록한 일정을 시간순으로 나열.
     - 일정은 **남은 시간** 표시 (장소,준비물,시간등 표시)
@@ -101,6 +105,15 @@
     - **닉네임 기반:** 신뢰가 중요한 '팟' 글에서는 댓글 작성자의 닉네임이 공개됨( 팟모집 게시판에서는 익명 불가)
     - **매칭 프로세스:** 글쓴이가 댓글 창에서 원하는 인원 체크 -> [채팅방 생성] 클릭 -> 채팅방 생성 ( 게시글 작성자는 강퇴 및 빈자리에 인원추가 가능 / 팟 개설시 참여자에게 알림 생성)
     - **채팅방** : 참여중인 채팅방 및 읽지않은 알림 갯수 표시
+      <img width="1902" height="899" alt="스크린샷 2026-01-21 162321" src="https://github.com/user-attachments/assets/ec5b8388-a1b0-41e1-b1e8-08418e1dcf8c" />
+      <img width="1918" height="904" alt="스크린샷 2026-01-21 162404" src="https://github.com/user-attachments/assets/cdcb2424-c08c-445e-a969-c04072263ce1" />
+      <img width="1906" height="900" alt="스크린샷 2026-01-21 162835" src="https://github.com/user-attachments/assets/3a2a7a45-dea1-4169-9174-7ba756c0fcc5" />
+      <img width="2539" height="1329" alt="KakaoTalk_20260121_162546102_01" src="https://github.com/user-attachments/assets/d72eb4c8-cfd8-4962-9169-a0f0ada6fe0b" />
+
+<img width="1919" height="897" alt="스크린샷 2026-01-21 162429" src="https://github.com/user-attachments/assets/3a9618c6-0f80-4771-b20e-27fd190a0afc" />
+
+
+
 - **검색:** 제목 또는 본문 키워드와 일치하는 게시글 검색 가능
     
 <img width="1914" height="896" alt="스크린샷 2026-01-21 153955" src="https://github.com/user-attachments/assets/079fe125-7ffb-4f89-8dc7-b88edf77b56b" />
@@ -129,8 +142,11 @@
 
 - **시스템 설정:**
     - **알람(On/Off)**: DB에 알림 수신 동의 여부 저장 (off시 내 글에 댓글 달리거나, 팟 개설을 알수 없음)
+ 
+  <img width="2536" height="1326" alt="KakaoTalk_20260121_162546102_02" src="https://github.com/user-attachments/assets/776350a5-02ca-4e76-98c6-bd29544375cd" />
     - **분반 탈퇴**: 탈퇴 시 모든 활동 내역은 유지되나 소속만 끊김.
     - **로그아웃**
+
     
   <img width="1918" height="911" alt="스크린샷 2026-01-21 151238" src="https://github.com/user-attachments/assets/0524881a-671c-4205-aff2-043bf23ba903" />
 <img width="1913" height="899" alt="스크린샷 2026-01-21 151211" src="https://github.com/user-attachments/assets/3ce36def-1b20-4b4c-8302-3946f81af423" />
