@@ -39,6 +39,16 @@
 - **CI/CD Pipeline**: **GitHub Actions** (빌드 및 배포 자동화)
 - **Image Registry**: **Amazon ECR (Elastic Container Registry)** (Docker 이미지 관리)
 - **Automation Script**: GitHub Secrets를 활용한 민감 정보(DB ID/PW, API Key) 주입
+  
+### 4. Frontend
+- **Framework** : Next.js 16, React 19
+- **Language** : TypeScript 5
+- **Styling** : Tailwind CSS 4, CVA, clsx, tailwind-merge
+- **UI / Components** : Radix UI, shadcn/ui, Lucide React, Recharts, Embla Carousel, cmdk, Vaul, Sonner
+- **Form & Validation** : React Hook Form, Zod, @hookform/resolvers
+- **Real-time** : SockJS, @stomp/stompjs (STOMP)
+- **Utils** : date-fns, next-themes
+- **Analytics** : Vercel Analytics
 
 ---
 
