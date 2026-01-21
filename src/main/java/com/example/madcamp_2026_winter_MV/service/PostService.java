@@ -178,6 +178,7 @@ public class PostService {
                         .map(cm -> PostResponseDto.ChatParticipantDto.builder()
                                 .nickname(cm.getMember().getNickname())
                                 .imageUrl(cm.getMember().getProfileImage())
+                                .roomId(cm.getMember().getRoom() != null ? cm.getMember().getRoom().getRoomId() : null)
                                 .build())
                         .collect(Collectors.toList());
             }

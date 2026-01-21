@@ -96,5 +96,7 @@ public class PostResponseDto {
     public static class ChatParticipantDto {
         private String nickname;
         private String imageUrl;
+        /** 참가자 분반 ID (표시: "{roomId} 분반") */
+        private Long roomId;
     }
 }
